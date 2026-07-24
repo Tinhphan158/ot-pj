@@ -4,12 +4,14 @@ import { useState } from 'react';
 import type { Overtime } from '@/shared/api';
 import { notify } from '@/shared/utils/notify';
 import { getErrorMessage } from '@/shared/utils/api-error';
+import { useCurrentUser } from '@/features/auth/store/auth.store';
 import type { OvertimeFormValues } from '@/features/overtime/schemas/overtime.schema';
 import { useCreateOvertimeMutation } from './mutations/useCreateOvertimeMutation';
 import { useUpdateOvertimeMutation } from './mutations/useUpdateOvertimeMutation';
 import { useDeleteOvertimeMutation } from './mutations/useDeleteOvertimeMutation';
 
 export function useOvertimeActions() {
+  const currentUser = useCurrentUser();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Overtime | null>(null);
   const [defaultDate, setDefaultDate] = useState<string | undefined>(undefined);
@@ -25,6 +27,11 @@ export function useOvertimeActions() {
   };
 
   const openEdit = (overtime: Overtime) => {
+    // Only the owner may edit/delete their own OT.
+    if (overtime.userId !== currentUser?.id) {
+      notify({ type: 'info', title: 'Chỉ chủ đơn mới sửa được', description: 'Đây là đơn OT của người khác.' });
+      return;
+    }
     setEditing(overtime);
     setDrawerOpen(true);
   };

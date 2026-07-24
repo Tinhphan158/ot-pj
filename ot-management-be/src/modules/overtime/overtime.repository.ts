@@ -19,6 +19,10 @@ export class OvertimeRepository {
     return this.db.overtime.findUnique({ where: { id }, include: overtimeWithUserInclude });
   }
 
+  findByUserAndDate(userId: string, date: Date): Promise<OvertimeEntity[]> {
+    return this.db.overtime.findMany({ where: { userId, date }, include: overtimeWithUserInclude });
+  }
+
   create(data: Prisma.OvertimeUncheckedCreateInput): Promise<OvertimeEntity> {
     return this.db.overtime.create({ data, include: overtimeWithUserInclude });
   }
