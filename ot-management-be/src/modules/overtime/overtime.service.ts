@@ -69,7 +69,7 @@ export class OvertimeService {
       hours,
     });
     const overtime = OvertimeMapper.toResponse(entity);
-    this.gateway.emit('created', { overtime, actor: { id: actor.id, name: actor.name } });
+    this.gateway.emit('created', { overtime, actor: { id: actor.id, name: overtime.user?.name ?? actor.name } });
     return overtime;
   }
 
@@ -94,7 +94,7 @@ export class OvertimeService {
     });
 
     const overtime = OvertimeMapper.toResponse(entity);
-    this.gateway.emit('updated', { overtime, actor: { id: actor.id, name: actor.name } });
+    this.gateway.emit('updated', { overtime, actor: { id: actor.id, name: overtime.user?.name ?? actor.name } });
     return overtime;
   }
 
@@ -104,6 +104,6 @@ export class OvertimeService {
 
     const entity = await this.overtimeRepository.delete(id);
     const overtime = OvertimeMapper.toResponse(entity);
-    this.gateway.emit('deleted', { overtime, actor: { id: actor.id, name: actor.name } });
+    this.gateway.emit('deleted', { overtime, actor: { id: actor.id, name: overtime.user?.name ?? actor.name } });
   }
 }

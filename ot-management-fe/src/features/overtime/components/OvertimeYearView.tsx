@@ -18,6 +18,7 @@ interface UserRow {
   name: string;
   avatar: string | null;
   total: number;
+  email: string;
 }
 
 const MONTH_LABELS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
@@ -34,7 +35,7 @@ export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: Ov
 
     for (const o of overtimes) {
       if (!userMap.has(o.userId)) {
-        userMap.set(o.userId, { id: o.userId, name: o.user?.name ?? '—', avatar: o.user?.avatar ?? null, total: 0 });
+        userMap.set(o.userId, { id: o.userId, name: o.user?.name ?? '—', email: o.user?.email ?? '—', avatar: o.user?.avatar ?? null, total: 0 });
       }
       const row = userMap.get(o.userId)!;
       row.total += o.hours;
@@ -101,6 +102,7 @@ export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: Ov
                           You
                         </span>
                       )}
+                      <span className="truncate text-xs text-muted-foreground">{row.email ?? '—'}</span>
                     </span>
                   </td>
                   {MONTH_LABELS.map((label, monthIndex) => {

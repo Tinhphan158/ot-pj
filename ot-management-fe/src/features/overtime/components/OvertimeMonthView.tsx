@@ -19,6 +19,7 @@ interface UserRow {
   name: string;
   avatar: string | null;
   total: number;
+  email: string;
 }
 
 /** Compact hours label for a matrix cell, e.g. "2h", "2.5h". */
@@ -43,7 +44,7 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
 
     for (const o of overtimes) {
       if (!userMap.has(o.userId)) {
-        userMap.set(o.userId, { id: o.userId, name: o.user?.name ?? '—', avatar: o.user?.avatar ?? null, total: 0 });
+        userMap.set(o.userId, { id: o.userId, name: o.user?.name ?? '—', email: o.user?.email ?? '—', avatar: o.user?.avatar ?? null, total: 0 });
       }
       const row = userMap.get(o.userId)!;
       row.total += o.hours;
@@ -131,6 +132,7 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
                           You
                         </span>
                       )}
+                      <span className="truncate text-xs text-muted-foreground">{row.email ?? '—'}</span>
                     </span>
                   </td>
                   {days.map((day) => {

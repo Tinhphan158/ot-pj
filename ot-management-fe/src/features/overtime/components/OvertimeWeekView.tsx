@@ -117,6 +117,7 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
                               </span>
                             )}
                           </span>
+                          <span className="truncate text-xs text-muted-foreground">{row.user?.email ?? '—'}</span>
                         </div>
 
                         <div className="relative h-8 flex-1 rounded-md bg-muted/40">
