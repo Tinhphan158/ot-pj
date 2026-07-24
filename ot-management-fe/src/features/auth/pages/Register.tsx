@@ -62,8 +62,8 @@ export default function Register() {
         password: info.password,
         otp: values.otp,
       });
-      notify({ type: 'success', title: 'Tạo tài khoản thành công', description: 'Chào mừng đến OT Management!' });
-      router.replace('/team-overtime');
+      notify({ type: 'success', title: 'Tạo tài khoản thành công', description: 'Vui lòng đăng nhập để tiếp tục.' });
+      router.replace('/login');
     } catch (error) {
       notify({ type: 'error', title: 'Xác thực thất bại', description: getErrorMessage(error) });
     }
