@@ -5,7 +5,7 @@ import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { userColor } from '@/features/overtime/utils/userColor';
-import { parseDateStr } from '@/features/overtime/utils/period';
+import { monthCycle, parseDateStr } from '@/features/overtime/utils/period';
 
 interface OvertimeYearViewProps {
   overtimes: Overtime[];
@@ -38,7 +38,8 @@ export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: Ov
       const row = userMap.get(o.userId)!;
       row.total += o.hours;
 
-      const monthIndex = parseDateStr(o.date).getMonth();
+      // Bucket by OT cycle month (21st→20th), not calendar month.
+      const monthIndex = monthCycle(parseDateStr(o.date)).labelMonth;
       const key = `${o.userId}|${monthIndex}`;
       const next = (cells.get(key) ?? 0) + o.hours;
       cells.set(key, next);

@@ -24,6 +24,37 @@ export function addDays(date: Date, days: number): Date {
   return d;
 }
 
+/**
+ * The "OT month" cycle a date belongs to. A cycle labelled month M runs from the
+ * 21st of the previous month to the 20th of month M — e.g. "Tháng 7" = 21/06–20/07.
+ * Returns the [start, endExclusive) range and the 0-based label month / year.
+ */
+export function monthCycle(anchor: Date): {
+  start: Date;
+  endExclusive: Date;
+  labelMonth: number;
+  labelYear: number;
+} {
+  const y = anchor.getFullYear();
+  const m = anchor.getMonth();
+  const d = anchor.getDate();
+
+  // Days 1–20 belong to this month's cycle; days 21+ roll into next month's cycle.
+  let labelMonth = m;
+  let labelYear = y;
+  if (d >= 21) {
+    labelMonth = m + 1;
+    if (labelMonth > 11) {
+      labelMonth = 0;
+      labelYear = y + 1;
+    }
+  }
+
+  const start = new Date(labelYear, labelMonth - 1, 21);
+  const endExclusive = new Date(labelYear, labelMonth, 21);
+  return { start, endExclusive, labelMonth, labelYear };
+}
+
 /** [from, to) date-string range covering the period around `anchor` for the given view. */
 export function getRange(view: OvertimeView, anchor: Date): { from: string; to: string } {
   const y = anchor.getFullYear();
@@ -41,13 +72,16 @@ export function getRange(view: OvertimeView, anchor: Date): { from: string; to: 
       start = startOfWeek(anchor);
       end = addDays(start, 7);
       break;
-    case 'month':
-      start = new Date(y, m, 1);
-      end = new Date(y, m + 1, 1);
+    case 'month': {
+      const cycle = monthCycle(anchor);
+      start = cycle.start;
+      end = cycle.endExclusive;
       break;
+    }
     case 'year':
-      start = new Date(y, 0, 1);
-      end = new Date(y + 1, 0, 1);
+      // Year Y in OT cycles spans Tháng 1 (21/12 of Y-1) through Tháng 12 (…20/12 of Y).
+      start = new Date(y - 1, 11, 21);
+      end = new Date(y, 11, 21);
       break;
   }
   return { from: toDateStr(start), to: toDateStr(end) };
@@ -63,9 +97,12 @@ export function shiftAnchor(view: OvertimeView, anchor: Date, delta: number): Da
     case 'week':
       d.setDate(d.getDate() + delta * 7);
       break;
-    case 'month':
-      d.setMonth(d.getMonth() + delta);
-      break;
+    case 'month': {
+      // Jump whole cycles: land on the 1st of the target label month (day ≤ 20
+      // maps back to that month's cycle).
+      const cycle = monthCycle(anchor);
+      return new Date(cycle.labelYear, cycle.labelMonth + delta, 1);
+    }
     case 'year':
       d.setFullYear(d.getFullYear() + delta);
       break;

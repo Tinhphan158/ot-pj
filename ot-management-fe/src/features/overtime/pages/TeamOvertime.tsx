@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Plus } from 'lucide-react';
-import { AppPageContainer, AppPageHeader } from '@/shared/components/custome';
+import { ChevronLeft, ChevronRight, Loader2, Plus } from 'lucide-react';
+import { AppDatePicker, AppPageContainer, AppPageHeader } from '@/shared/components/custome';
 import { Button } from '@/shared/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { formatDate, formatDateWithWeekday } from '@/shared/utils/format';
@@ -13,6 +13,7 @@ import { useOvertimeRealtime } from '@/features/overtime/hooks/useOvertimeRealti
 import {
   addDays,
   getRange,
+  monthCycle,
   parseDateStr,
   shiftAnchor,
   startOfWeek,
@@ -41,8 +42,11 @@ function periodLabel(view: OvertimeView, anchor: Date): string {
       const end = addDays(start, 6);
       return `${formatDate(start, 'dd/MM')} – ${formatDate(end, 'dd/MM/yyyy')}`;
     }
-    case 'month':
-      return `Tháng ${anchor.getMonth() + 1}, ${anchor.getFullYear()}`;
+    case 'month': {
+      const { start, endExclusive, labelMonth } = monthCycle(anchor);
+      const end = addDays(endExclusive, -1);
+      return `Tháng ${labelMonth + 1}: ${formatDate(start, 'dd/MM')} – ${formatDate(end, 'dd/MM/yyyy')}`;
+    }
     case 'year':
       return `Năm ${anchor.getFullYear()}`;
   }
@@ -110,20 +114,12 @@ export default function TeamOvertime() {
               <ChevronLeft className="size-4" />
             </Button>
             {view === 'day' ? (
-              // In Day view the label becomes a date picker.
-              <label className="flex h-8 min-w-[190px] cursor-pointer items-center justify-center gap-2 rounded-md border px-2 text-sm font-medium">
-                <CalendarDays className="size-4 text-muted-foreground" />
-                <input
-                  type="date"
-                  value={toDateStr(anchor)}
-                  onChange={(event) => {
-                    if (!event.target.value) return;
-                    setAnchor(parseDateStr(event.target.value));
-                  }}
-                  className="bg-transparent text-foreground outline-none [color-scheme:light] dark:[color-scheme:dark]"
-                  aria-label="Chọn ngày"
-                />
-              </label>
+              // In Day view the label becomes a date picker (dd/MM/yyyy).
+              <AppDatePicker
+                value={toDateStr(anchor)}
+                onChange={(iso) => setAnchor(parseDateStr(iso))}
+                className="h-8 min-w-[190px] justify-center font-medium"
+              />
             ) : (
               <span className="min-w-[190px] text-center text-sm font-medium">{periodLabel(view, anchor)}</span>
             )}

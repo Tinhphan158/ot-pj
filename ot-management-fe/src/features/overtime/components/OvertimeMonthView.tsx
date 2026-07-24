@@ -5,7 +5,7 @@ import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { userColor } from '@/features/overtime/utils/userColor';
-import { isSameDay, toDateStr } from '@/features/overtime/utils/period';
+import { addDays, isSameDay, monthCycle, toDateStr } from '@/features/overtime/utils/period';
 
 interface OvertimeMonthViewProps {
   overtimes: Overtime[];
@@ -26,13 +26,14 @@ function cellHours(hours: number): string {
 }
 
 export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSelectDay }: OvertimeMonthViewProps) {
-  const year = monthAnchor.getFullYear();
-  const month = monthAnchor.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const days = useMemo(
-    () => Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1)),
-    [year, month, daysInMonth],
-  );
+  const { labelMonth, labelYear } = monthCycle(monthAnchor);
+  // Columns span the OT cycle (21st of prev month → 20th of the label month).
+  const days = useMemo(() => {
+    const { start, endExclusive } = monthCycle(monthAnchor);
+    const arr: Date[] = [];
+    for (let d = new Date(start); d < endExclusive; d = addDays(d, 1)) arr.push(d);
+    return arr;
+  }, [monthAnchor]);
 
   const { rows, cellMap, maxHours } = useMemo(() => {
     const userMap = new Map<string, UserRow>();
@@ -66,7 +67,7 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
-        Không có OT nào trong tháng {month + 1}/{year}.
+        Không có OT nào trong tháng {labelMonth + 1}/{labelYear}.
       </div>
     );
   }

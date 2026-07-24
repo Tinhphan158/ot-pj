@@ -1,13 +1,13 @@
 'use client';
 
 import type { Control } from 'react-hook-form';
-import { AppFieldGroup, AppFormInput, AppFormTextarea } from '@/shared/components/custome';
+import { AppFieldGroup, AppFormDatePicker, AppFormInput, AppFormTextarea } from '@/shared/components/custome';
 import type { OvertimeFormValues } from '@/features/overtime/schemas/overtime.schema';
 
 export function OvertimeForm({ control }: { control: Control<OvertimeFormValues> }) {
   return (
     <div className="space-y-4">
-      <AppFormInput control={control} name="date" label="Date" type="date" />
+      <AppFormDatePicker control={control} name="date" label="Date" />
       <AppFieldGroup>
         <AppFormInput control={control} name="startTime" label="Start time" type="time" />
         <AppFormInput control={control} name="endTime" label="End time" type="time" />

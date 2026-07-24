@@ -13,6 +13,7 @@ import {
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { Textarea } from '@/shared/components/ui/textarea';
+import { AppDatePicker } from '../AppDatePicker';
 
 interface BaseFieldProps<T extends FieldValues> {
   control: Control<T>;
@@ -113,6 +114,38 @@ export function AppFormTextarea<T extends FieldValues>({
           {label && <FormLabel>{label}</FormLabel>}
           <FormControl>
             <Textarea rows={rows} placeholder={placeholder} disabled={disabled} {...field} value={field.value ?? ''} />
+          </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+export function AppFormDatePicker<T extends FieldValues>({
+  control,
+  name,
+  label,
+  placeholder,
+  description,
+  disabled,
+}: BaseFieldProps<T>) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className="flex flex-col">
+          {label && <FormLabel>{label}</FormLabel>}
+          <FormControl>
+            <AppDatePicker
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              placeholder={placeholder}
+              disabled={disabled}
+              className="w-full"
+            />
           </FormControl>
           {description && <FormDescription>{description}</FormDescription>}
           <FormMessage />
