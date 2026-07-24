@@ -126,13 +126,17 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
                   <td className={cn('sticky left-0 z-10 border-b px-3 py-1.5', mine ? 'bg-primary/5' : 'bg-card')}>
                     <span className="flex items-center gap-2">
                       <OvertimeUserAvatar userId={row.id} name={row.name} avatarUrl={row.avatar} className="size-6" />
-                      <span className="truncate font-medium">{row.name}</span>
-                      {mine && (
-                        <span className="rounded bg-foreground px-1.5 py-0.5 text-[10px] font-semibold text-background">
-                          You
-                        </span>
-                      )}
-                      <span className="truncate text-xs text-muted-foreground">{row.email ?? '—'}</span>
+                      <div className='flex flex-col gap-2'>
+                        <div className='flex items-center gap-2'>
+                          <span className="truncate font-medium">{row.name}</span>
+                          {mine && (
+                            <span className="rounded bg-foreground px-1.5 py-0.5 text-[10px] font-semibold text-background">
+                              You
+                            </span>
+                          )}
+                        </div>
+                        <span className="truncate text-xs text-muted-foreground">{row.email ?? '—'}</span>
+                      </div>
                     </span>
                   </td>
                   {days.map((day) => {
