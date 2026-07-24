@@ -13,7 +13,7 @@ export type OvertimeFormValues = z.infer<typeof overtimeSchema>;
 
 export const OVERTIME_EMPTY: OvertimeFormValues = {
   date: '',
-  startTime: '18:00',
-  endTime: '20:00',
+  startTime: '17:00',
+  endTime: '19:00',
   reason: '',
 };
