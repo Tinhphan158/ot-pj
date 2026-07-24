@@ -1,15 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { computeOvertimeHours } from '@/utils';
 import { NotFoundException } from '@/common';
+import type { JwtPayload } from '@/common';
 import { OvertimeRepository } from './overtime.repository';
 import { OvertimeMapper } from './overtime.mapper';
 import { OvertimeEntity } from './overtime.entity';
 import { OvertimeResponseDto } from './overtime.response';
+import { OvertimeGateway } from './overtime.gateway';
 import { CreateOvertimeDto, QueryOvertimeRangeDto, UpdateOvertimeDto } from './dto';
 
 @Injectable()
 export class OvertimeService {
-  constructor(private readonly overtimeRepository: OvertimeRepository) {}
+  constructor(
+    private readonly overtimeRepository: OvertimeRepository,
+    private readonly gateway: OvertimeGateway,
+  ) {}
 
   /** All overtime registered within [from, to) across the whole company. */
   async findByRange(query: QueryOvertimeRangeDto): Promise<OvertimeResponseDto[]> {
@@ -25,20 +30,22 @@ export class OvertimeService {
     return entity;
   }
 
-  async create(userId: string, dto: CreateOvertimeDto): Promise<OvertimeResponseDto> {
+  async create(actor: JwtPayload, dto: CreateOvertimeDto): Promise<OvertimeResponseDto> {
     const hours = computeOvertimeHours(dto.startTime, dto.endTime);
     const entity = await this.overtimeRepository.create({
-      userId,
+      userId: actor.id,
       date: new Date(dto.date),
       startTime: dto.startTime,
       endTime: dto.endTime,
       hours,
       reason: dto.reason,
     });
-    return OvertimeMapper.toResponse(entity);
+    const overtime = OvertimeMapper.toResponse(entity);
+    this.gateway.emit('created', { overtime, actor: { id: actor.id, name: actor.name } });
+    return overtime;
   }
 
-  async update(id: string, dto: UpdateOvertimeDto): Promise<OvertimeResponseDto> {
+  async update(id: string, dto: UpdateOvertimeDto, actor: JwtPayload): Promise<OvertimeResponseDto> {
     const current = await this.getOrThrow(id);
 
     const startTime = dto.startTime ?? current.startTime;
@@ -53,11 +60,15 @@ export class OvertimeService {
       ...(timesChanged ? { hours: computeOvertimeHours(startTime, endTime) } : {}),
     });
 
-    return OvertimeMapper.toResponse(entity);
+    const overtime = OvertimeMapper.toResponse(entity);
+    this.gateway.emit('updated', { overtime, actor: { id: actor.id, name: actor.name } });
+    return overtime;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, actor: JwtPayload): Promise<void> {
     await this.getOrThrow(id);
-    await this.overtimeRepository.delete(id);
+    const entity = await this.overtimeRepository.delete(id);
+    const overtime = OvertimeMapper.toResponse(entity);
+    this.gateway.emit('deleted', { overtime, actor: { id: actor.id, name: actor.name } });
   }
 }

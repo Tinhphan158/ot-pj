@@ -28,17 +28,21 @@ export class OvertimeController {
 
   @Post()
   create(@CurrentUser() user: JwtPayload, @Body() dto: CreateOvertimeDto): Promise<OvertimeResponseDto> {
-    return this.overtimeService.create(user.id, dto);
+    return this.overtimeService.create(user, dto);
   }
 
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateOvertimeDto): Promise<OvertimeResponseDto> {
-    return this.overtimeService.update(id, dto);
+  update(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateOvertimeDto,
+  ): Promise<OvertimeResponseDto> {
+    return this.overtimeService.update(id, dto, user);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.overtimeService.remove(id);
+  remove(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.overtimeService.remove(id, user);
   }
 }

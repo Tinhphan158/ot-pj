@@ -9,6 +9,7 @@ import { formatDate, formatDateWithWeekday } from '@/shared/utils/format';
 import { useCurrentUser } from '@/features/auth/store/auth.store';
 import { useOvertimeRangeQuery } from '@/features/overtime/hooks/queries/useOvertimesQuery';
 import { useOvertimeActions } from '@/features/overtime/hooks/useOvertimeActions';
+import { useOvertimeRealtime } from '@/features/overtime/hooks/useOvertimeRealtime';
 import {
   addDays,
   getRange,
@@ -51,6 +52,9 @@ export default function TeamOvertime() {
   const currentUser = useCurrentUser();
   const [view, setView] = useState<OvertimeView>('day');
   const [anchor, setAnchor] = useState(() => new Date());
+
+  // Realtime: refresh + notify when anyone creates/updates/deletes an OT.
+  useOvertimeRealtime();
 
   const { from, to } = useMemo(() => getRange(view, anchor), [view, anchor]);
   const query = useOvertimeRangeQuery(from, to);
