@@ -58,7 +58,7 @@ export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: Over
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="flex">
-        <div className="w-44 shrink-0" />
+        <div className="w-100 shrink-0" />
         <div className="relative h-5 flex-1">
           {hourTicks.map((tick) => (
             <span

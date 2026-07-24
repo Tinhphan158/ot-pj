@@ -71,6 +71,16 @@ export function AppTimeInput({ value, onChange, placeholder = 'vd: 21 → 21:00'
     }
   };
 
+  // Block anything that isn't a digit or a single ':' as the user types.
+  const sanitize = (raw: string): string => {
+    let v = raw.replace(/[^\d:]/g, '');
+    const firstColon = v.indexOf(':');
+    if (firstColon !== -1) {
+      v = v.slice(0, firstColon + 1) + v.slice(firstColon + 1).replace(/:/g, '');
+    }
+    return v.slice(0, 5); // "HH:mm"
+  };
+
   const hint = value ? to12h(value) : '';
 
   return (
@@ -87,7 +97,7 @@ export function AppTimeInput({ value, onChange, placeholder = 'vd: 21 → 21:00'
         inputMode="numeric"
         disabled={disabled}
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => setText(sanitize(e.target.value))}
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {

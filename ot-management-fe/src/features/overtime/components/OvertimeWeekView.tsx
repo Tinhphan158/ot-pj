@@ -61,7 +61,7 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
     <div className="rounded-xl border bg-card p-4">
       {/* Shared hour axis */}
       <div className="flex">
-        <div className="w-44 shrink-0" />
+        <div className="w-100 shrink-0" />
         <div className="relative h-5 flex-1">
           {hourTicks.map((tick) => (
             <span
@@ -97,7 +97,7 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
               </button>
 
               {records.length === 0 ? (
-                <p className="pl-44 text-xs text-muted-foreground">Không có OT</p>
+                <p className="pl-100 text-xs text-muted-foreground">Không có OT</p>
               ) : (
                 <div className="flex flex-col gap-1">
                   {records.map((row) => {
@@ -107,7 +107,7 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
                     const color = userColor(row.userId);
                     return (
                       <div key={row.id} className="flex items-center">
-                        <div className="flex w-44 shrink-0 items-center gap-2 pr-3">
+                        <div className="flex w-100 shrink-0 items-center gap-2 pr-3">
                           <OvertimeUserAvatar userId={row.userId} name={row.user?.name ?? '—'} className="size-6" />
                           <span className="flex min-w-0 items-center gap-1.5 truncate text-sm">
                             <span className="truncate font-medium">{row.user?.name ?? '—'}</span>
