@@ -126,7 +126,7 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
                   <td className={cn('sticky left-0 z-10 border-b px-3 py-1.5', mine ? 'bg-primary/5' : 'bg-card')}>
                     <span className="flex items-center gap-2">
                       <OvertimeUserAvatar userId={row.id} name={row.name} avatarUrl={row.avatar} className="size-6" />
-                      <div className='flex flex-col gap-2'>
+                      <div className='flex flex-col gap-1'>
                         <div className='flex items-center gap-2'>
                           <span className="truncate font-medium">{row.name}</span>
                           {mine && (
