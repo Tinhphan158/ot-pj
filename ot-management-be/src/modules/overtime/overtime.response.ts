@@ -12,7 +12,6 @@ export type OvertimeResponseDto = {
   startTime: string;
   endTime: string;
   hours: number;
-  reason: string;
   createdAt: Date;
   updatedAt: Date;
 };

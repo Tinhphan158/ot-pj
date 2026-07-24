@@ -17,10 +17,7 @@ export class UserService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto): Promise<UserResponseDto> {
-    const user = await this.userRepository.update(userId, {
-      ...(dto.name !== undefined ? { name: dto.name } : {}),
-      ...(dto.avatar !== undefined ? { avatar: dto.avatar || null } : {}),
-    });
+    const user = await this.userRepository.update(userId, { name: dto.name });
     return UserMapper.toResponse(user);
   }
 

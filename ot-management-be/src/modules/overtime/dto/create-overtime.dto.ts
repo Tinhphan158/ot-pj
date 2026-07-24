@@ -1,4 +1,4 @@
-import { IsDateString, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsDateString, Matches } from 'class-validator';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -11,9 +11,4 @@ export class CreateOvertimeDto {
 
   @Matches(TIME_REGEX, { message: 'endTime must be in HH:mm format' })
   endTime: string;
-
-  @IsString()
-  @MinLength(3)
-  @MaxLength(500)
-  reason: string;
 }

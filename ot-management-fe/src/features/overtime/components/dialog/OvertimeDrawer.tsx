@@ -28,7 +28,6 @@ function toFormValues(overtime: Overtime | null, defaultDate?: string): Overtime
     date: overtime.date,
     startTime: overtime.startTime,
     endTime: overtime.endTime,
-    reason: overtime.reason,
   };
 }
 

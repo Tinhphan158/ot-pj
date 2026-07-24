@@ -23,13 +23,10 @@ export class MailService {
     }
   }
 
-  async sendOtp(email: string, otp: string): Promise<void> {
-    const subject = 'Your OT Management password reset code';
-    const text = `Your verification code is ${otp}. It expires in 5 minutes.`;
-
+  private async send(email: string, subject: string, text: string): Promise<void> {
     if (!this.transporter) {
       // Dev fallback — no SMTP configured.
-      this.logger.warn(`[DEV MAIL] To: ${email} | ${text}`);
+      this.logger.warn(`[DEV MAIL] To: ${email} | ${subject} | ${text}`);
       return;
     }
 
@@ -39,5 +36,21 @@ export class MailService {
       subject,
       text,
     });
+  }
+
+  async sendOtp(email: string, otp: string): Promise<void> {
+    await this.send(
+      email,
+      'Your OT Management password reset code',
+      `Your verification code is ${otp}. It expires in 5 minutes.`,
+    );
+  }
+
+  async sendSignupOtp(email: string, otp: string): Promise<void> {
+    await this.send(
+      email,
+      'Mã xác thực đăng ký OT Management',
+      `Mã xác thực đăng ký tài khoản của bạn là ${otp}. Mã hết hạn sau 5 phút.`,
+    );
   }
 }

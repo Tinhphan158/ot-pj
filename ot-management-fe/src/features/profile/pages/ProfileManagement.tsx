@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { AppPageContainer, AppPageHeader, AppFormInput, AppFormPasswordInput } from '@/shared/components/custome';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Form } from '@/shared/components/ui/form';
 import { Button } from '@/shared/components/ui/button';
 import { getInitials } from '@/shared/utils/format';
@@ -28,7 +28,7 @@ export default function ProfileManagement() {
 
   const profileForm = useForm<UpdateProfileValues>({
     resolver: zodResolver(updateProfileSchema),
-    values: { name: user?.name ?? '', avatar: user?.avatar ?? '' },
+    values: { name: user?.name ?? '' },
   });
 
   const passwordForm = useForm<ChangePasswordValues>({
@@ -36,12 +36,11 @@ export default function ProfileManagement() {
     defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' },
   });
 
-  const avatarPreview = profileForm.watch('avatar');
   const namePreview = profileForm.watch('name');
 
   const onSaveProfile = async (values: UpdateProfileValues) => {
     try {
-      await updateProfile.mutateAsync({ name: values.name, avatar: values.avatar || undefined });
+      await updateProfile.mutateAsync({ name: values.name });
       notify({ type: 'success', title: 'Đã cập nhật hồ sơ' });
     } catch (error) {
       notify({ type: 'error', title: 'Không thể cập nhật hồ sơ', description: getErrorMessage(error) });
@@ -74,7 +73,6 @@ export default function ProfileManagement() {
           <CardContent>
             <div className="mb-5 flex items-center gap-4">
               <Avatar className="size-16 border">
-                {avatarPreview ? <AvatarImage src={avatarPreview} alt={namePreview} /> : null}
                 <AvatarFallback className="bg-primary/10 text-lg font-medium text-primary">
                   {getInitials(namePreview || user?.name || '?')}
                 </AvatarFallback>
@@ -88,13 +86,6 @@ export default function ProfileManagement() {
             <Form {...profileForm}>
               <form onSubmit={profileForm.handleSubmit(onSaveProfile)} className="space-y-4">
                 <AppFormInput control={profileForm.control} name="name" label="Họ và tên" placeholder="Nguyễn Văn A" />
-                <AppFormInput
-                  control={profileForm.control}
-                  name="avatar"
-                  label="Ảnh đại diện (URL)"
-                  placeholder="https://…"
-                  description="Dán đường dẫn ảnh. Để trống nếu muốn dùng chữ viết tắt."
-                />
                 <div className="flex justify-end">
                   <Button type="submit" disabled={updateProfile.isPending}>
                     {updateProfile.isPending && <Loader2 className="size-4 animate-spin" />}

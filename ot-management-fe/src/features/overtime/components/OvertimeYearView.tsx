@@ -4,8 +4,8 @@ import { useMemo } from 'react';
 import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
-import { userColor } from '@/features/overtime/utils/userColor';
 import { monthCycle, parseDateStr } from '@/features/overtime/utils/period';
+import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 
 interface OvertimeYearViewProps {
   overtimes: Overtime[];
@@ -89,12 +89,11 @@ export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: Ov
           <tbody>
             {rows.map((row) => {
               const mine = row.id === currentUserId;
-              const color = userColor(row.id);
               return (
                 <tr key={row.id} className={cn(mine && 'bg-primary/5')}>
                   <td className={cn('sticky left-0 z-10 border-b px-3 py-1.5', mine ? 'bg-primary/5' : 'bg-card')}>
                     <span className="flex items-center gap-2">
-                      <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                      <OvertimeUserAvatar userId={row.id} name={row.name} className="size-6" />
                       <span className="truncate font-medium">{row.name}</span>
                       {mine && (
                         <span className="rounded bg-foreground px-1.5 py-0.5 text-[10px] font-semibold text-background">

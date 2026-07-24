@@ -5,6 +5,7 @@ import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { userColor } from '@/features/overtime/utils/userColor';
+import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 
 interface OvertimeDayTimelineProps {
   overtimes: Overtime[];
@@ -79,8 +80,8 @@ export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: Over
           const color = userColor(row.userId);
           return (
             <div key={row.id} className="flex items-center">
-              <div className="flex w-44 shrink-0 items-center gap-2 pr-3">
-                <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+              <div className="flex w-100 shrink-0 items-center gap-2 pr-3">
+                <OvertimeUserAvatar userId={row.userId} name={row.user?.name ?? '—'} />
                 <div className="min-w-0">
                   <span className="flex items-center gap-1.5 truncate text-sm font-medium">
                     <span className="truncate">{row.user?.name ?? '—'}</span>
@@ -111,7 +112,7 @@ export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: Over
                     isMine && 'ring-2 ring-foreground ring-offset-1 ring-offset-card',
                   )}
                   style={{ left: `${left}%`, width: `${width}%`, backgroundColor: color }}
-                  title={`${row.user?.name ?? ''} · ${row.startTime}–${row.endTime} · ${row.reason}`}
+                  title={`${row.user?.name ?? ''} · ${row.startTime}–${row.endTime}`}
                 >
                   <span className="truncate font-medium">
                     {row.startTime}–{row.endTime}

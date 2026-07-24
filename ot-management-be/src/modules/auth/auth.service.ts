@@ -8,9 +8,37 @@ import { MailService } from '@/modules/mail/mail.service';
 import { AuthTokenService } from './auth-token.service';
 import { OtpService } from './otp.service';
 import { AuthResponseDto, MessageResponseDto } from './auth.response';
-import { ForgotPasswordDto, LoginDto, ResetPasswordDto, SignupDto, VerifyOtpDto } from './dto';
+import {
+  ForgotPasswordDto,
+  LoginDto,
+  RequestSignupOtpDto,
+  ResetPasswordDto,
+  SignupDto,
+  VerifyOtpDto,
+} from './dto';
 
 const GENERIC_OTP_MESSAGE = 'If an account exists for that email, a verification code has been sent.';
+
+/** Only these whitelisted emails may register. */
+const ALLOWED_EMAILS = new Set(
+  [
+    'hieutc@v-takeuchi.vn',
+    'phucnnq@v-takeuchi.vn',
+    'minhpq@v-takeuchi.vn',
+    'quihn@v-takeuchi.vn',
+    'thaind@v-takeuchi.vn',
+    'tinhpt@v-takeuchi.vn',
+    'anntt@v-takeuchi.vn',
+    'hiepnd@v-takeuchi.vn',
+    'hungtt@v-takeuchi.vn',
+    'thongdn@v-takeuchi.vn',
+    'khiemth@v-takeuchi.vn',
+    'phamdanh@v-takeuchi.vn',
+  ].map((email) => email.toLowerCase()),
+);
+const EMAIL_NOT_ALLOWED_MESSAGE = 'bạn không thuộc teamIT bạn đừng mơ sử dụng web này hehehe';
+/** Namespace signup OTPs so they don't collide with password-reset OTPs. */
+const signupOtpKey = (email: string) => `signup:${email}`;
 
 @Injectable()
 export class AuthService {
@@ -29,9 +57,35 @@ export class AuthService {
     return { ...tokens, user: UserMapper.toResponse(user) };
   }
 
-  async signup(dto: SignupDto): Promise<AuthResponseDto> {
+  private assertAllowedEmail(email: string): void {
+    if (!ALLOWED_EMAILS.has(email.trim().toLowerCase())) {
+      throw new BadRequestException(EMAIL_NOT_ALLOWED_MESSAGE, 'EMAIL_NOT_ALLOWED');
+    }
+  }
+
+  /** Step 1 of signup: validate the email and mail a verification code. */
+  async requestSignupOtp(dto: RequestSignupOtpDto): Promise<MessageResponseDto> {
+    this.assertAllowedEmail(dto.email);
+
     const existing = await this.userRepository.findByEmail(dto.email);
-    if (existing) ExceptionHelper.throwConflict('Email is already in use', 'EMAIL_TAKEN');
+    if (existing) ExceptionHelper.throwConflict('Email đã được sử dụng', 'EMAIL_TAKEN');
+
+    const code = this.otpService.generateCode();
+    await this.otpService.store(signupOtpKey(dto.email), code);
+    await this.mailService.sendSignupOtp(dto.email, code);
+
+    return { message: 'Mã xác thực đã được gửi tới email của bạn' };
+  }
+
+  /** Step 2 of signup: verify the code, then create the account. */
+  async signup(dto: SignupDto): Promise<AuthResponseDto> {
+    this.assertAllowedEmail(dto.email);
+
+    const valid = await this.otpService.verify(signupOtpKey(dto.email), dto.otp);
+    if (!valid) throw new BadRequestException('Mã xác thực không đúng hoặc đã hết hạn', 'INVALID_OTP');
+
+    const existing = await this.userRepository.findByEmail(dto.email);
+    if (existing) ExceptionHelper.throwConflict('Email đã được sử dụng', 'EMAIL_TAKEN');
 
     const password = await BcryptHelper.hash(dto.password);
     const user = await this.userRepository.create({
@@ -39,6 +93,8 @@ export class AuthService {
       password,
       name: dto.name,
     });
+
+    await this.otpService.clear(signupOtpKey(dto.email));
 
     return this.issueTokens(user);
   }

@@ -5,6 +5,7 @@ import { cn } from '@/shared/utils/cn';
 import { formatHours, weekdayVi } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { userColor } from '@/features/overtime/utils/userColor';
+import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 import { addDays, isSameDay, timeToMinutes, toDateStr } from '@/features/overtime/utils/period';
 
 interface OvertimeWeekViewProps {
@@ -107,7 +108,7 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
                     return (
                       <div key={row.id} className="flex items-center">
                         <div className="flex w-44 shrink-0 items-center gap-2 pr-3">
-                          <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                          <OvertimeUserAvatar userId={row.userId} name={row.user?.name ?? '—'} className="size-6" />
                           <span className="flex min-w-0 items-center gap-1.5 truncate text-sm">
                             <span className="truncate font-medium">{row.user?.name ?? '—'}</span>
                             {isMine && (
@@ -135,7 +136,7 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
                               isMine && 'ring-2 ring-foreground ring-offset-1 ring-offset-card',
                             )}
                             style={{ left: `${left}%`, width: `${width}%`, backgroundColor: color }}
-                            title={`${row.user?.name ?? ''} · ${row.startTime}–${row.endTime} · ${row.reason}`}
+                            title={`${row.user?.name ?? ''} · ${row.startTime}–${row.endTime}`}
                           >
                             <span className="truncate font-medium">
                               {row.startTime}–{row.endTime}

@@ -55,15 +55,6 @@ async function main() {
   // Fresh OT rows.
   await prisma.overtime.deleteMany({});
 
-  const reasons = [
-    'Release hotfix',
-    'Sprint deadline',
-    'Production incident',
-    'Client demo preparation',
-    'Data migration',
-    'Code review backlog',
-  ];
-
   let count = 0;
   for (const user of users) {
     for (let monthsAgo = 0; monthsAgo < 4; monthsAgo++) {
@@ -80,7 +71,6 @@ async function main() {
             startTime,
             endTime,
             hours: computeHours(startTime, endTime),
-            reason: reasons[(count + i) % reasons.length],
           },
         });
         count++;

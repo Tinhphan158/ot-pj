@@ -1,6 +1,7 @@
 export const API_PATHS = {
   AUTH: {
     SIGNUP: '/auth/signup',
+    SIGNUP_REQUEST_OTP: '/auth/signup/request-otp',
     LOGIN: '/auth/login',
     REFRESH: '/auth/refresh-token',
     LOGOUT: '/auth/logout',

@@ -2,10 +2,15 @@ import { http } from '@/lib/http';
 import { API_PATHS } from '@/shared/api/constants/api-paths';
 import type { AuthResponse, MessageResponse } from '@/shared/api/types';
 
+export interface RequestSignupOtpPayload {
+  email: string;
+}
+
 export interface SignupPayload {
   email: string;
   password: string;
   name: string;
+  otp: string;
 }
 
 export interface LoginPayload {
@@ -29,6 +34,8 @@ export interface ResetPasswordPayload {
 }
 
 export const authService = {
+  requestSignupOtp: (payload: RequestSignupOtpPayload) =>
+    http.post<MessageResponse>(API_PATHS.AUTH.SIGNUP_REQUEST_OTP, payload),
   signup: (payload: SignupPayload) => http.post<AuthResponse>(API_PATHS.AUTH.SIGNUP, payload),
   login: (payload: LoginPayload) => http.post<AuthResponse>(API_PATHS.AUTH.LOGIN, payload),
   logout: () => http.post<MessageResponse>(API_PATHS.AUTH.LOGOUT),

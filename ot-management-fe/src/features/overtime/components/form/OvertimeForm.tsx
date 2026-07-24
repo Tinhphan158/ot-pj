@@ -1,7 +1,7 @@
 'use client';
 
 import type { Control } from 'react-hook-form';
-import { AppFieldGroup, AppFormDatePicker, AppFormInput, AppFormTextarea } from '@/shared/components/custome';
+import { AppFieldGroup, AppFormDatePicker, AppFormTimeField } from '@/shared/components/custome';
 import type { OvertimeFormValues } from '@/features/overtime/schemas/overtime.schema';
 
 export function OvertimeForm({ control }: { control: Control<OvertimeFormValues> }) {
@@ -9,16 +9,9 @@ export function OvertimeForm({ control }: { control: Control<OvertimeFormValues>
     <div className="space-y-4">
       <AppFormDatePicker control={control} name="date" label="Date" />
       <AppFieldGroup>
-        <AppFormInput control={control} name="startTime" label="Start time" type="time" />
-        <AppFormInput control={control} name="endTime" label="End time" type="time" />
+        <AppFormTimeField control={control} name="startTime" label="Start time" />
+        <AppFormTimeField control={control} name="endTime" label="End time" />
       </AppFieldGroup>
-      <AppFormTextarea
-        control={control}
-        name="reason"
-        label="Reason"
-        placeholder="Describe why the overtime was needed…"
-        rows={4}
-      />
     </div>
   );
 }

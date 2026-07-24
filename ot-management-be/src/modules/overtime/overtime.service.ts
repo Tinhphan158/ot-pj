@@ -67,7 +67,6 @@ export class OvertimeService {
       startTime: dto.startTime,
       endTime: dto.endTime,
       hours,
-      reason: dto.reason,
     });
     const overtime = OvertimeMapper.toResponse(entity);
     this.gateway.emit('created', { overtime, actor: { id: actor.id, name: actor.name } });
@@ -91,7 +90,6 @@ export class OvertimeService {
       ...(dto.date !== undefined ? { date } : {}),
       ...(dto.startTime !== undefined ? { startTime } : {}),
       ...(dto.endTime !== undefined ? { endTime } : {}),
-      ...(dto.reason !== undefined ? { reason: dto.reason } : {}),
       ...(timesChanged ? { hours: computeOvertimeHours(startTime, endTime) } : {}),
     });
 

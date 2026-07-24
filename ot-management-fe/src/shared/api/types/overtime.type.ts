@@ -12,7 +12,6 @@ export interface Overtime {
   startTime: string;
   endTime: string;
   hours: number;
-  reason: string;
   createdAt: string;
   updatedAt: string;
 }

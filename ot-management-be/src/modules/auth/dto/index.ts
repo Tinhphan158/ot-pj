@@ -1,4 +1,5 @@
 export * from './signup.dto';
+export * from './request-signup-otp.dto';
 export * from './login.dto';
 export * from './refresh-token.dto';
 export * from './forgot-password.dto';

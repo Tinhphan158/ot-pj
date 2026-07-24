@@ -14,6 +14,7 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { AppDatePicker } from '../AppDatePicker';
+import { AppTimeInput } from '../AppTimeInput';
 
 interface BaseFieldProps<T extends FieldValues> {
   control: Control<T>;
@@ -145,6 +146,37 @@ export function AppFormDatePicker<T extends FieldValues>({
               placeholder={placeholder}
               disabled={disabled}
               className="w-full"
+            />
+          </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+export function AppFormTimeField<T extends FieldValues>({
+  control,
+  name,
+  label,
+  placeholder,
+  description,
+  disabled,
+}: BaseFieldProps<T>) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          {label && <FormLabel>{label}</FormLabel>}
+          <FormControl>
+            <AppTimeInput
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              placeholder={placeholder}
+              disabled={disabled}
             />
           </FormControl>
           {description && <FormDescription>{description}</FormDescription>}

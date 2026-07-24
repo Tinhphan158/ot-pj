@@ -3,8 +3,7 @@ import { API_PATHS } from '@/shared/api/constants/api-paths';
 import type { MessageResponse, User } from '@/shared/api/types';
 
 export interface UpdateProfilePayload {
-  name?: string;
-  avatar?: string;
+  name: string;
 }
 
 export interface ChangePasswordPayload {

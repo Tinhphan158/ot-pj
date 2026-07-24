@@ -8,6 +8,7 @@ import {
   ForgotPasswordDto,
   LoginDto,
   RefreshTokenDto,
+  RequestSignupOtpDto,
   ResetPasswordDto,
   SignupDto,
   VerifyOtpDto,
@@ -17,6 +18,14 @@ import {
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('signup/request-otp')
+  @HttpCode(HttpStatus.OK)
+  requestSignupOtp(@Body() dto: RequestSignupOtpDto): Promise<MessageResponseDto> {
+    return this.authService.requestSignupOtp(dto);
+  }
 
   @Public()
   @Post('signup')

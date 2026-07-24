@@ -6,7 +6,6 @@ export interface CreateOvertimePayload {
   date: string;
   startTime: string;
   endTime: string;
-  reason: string;
 }
 
 export type UpdateOvertimePayload = Partial<CreateOvertimePayload>;

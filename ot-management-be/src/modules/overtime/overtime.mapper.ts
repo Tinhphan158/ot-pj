@@ -22,7 +22,6 @@ export class OvertimeMapper {
       startTime: entity.startTime,
       endTime: entity.endTime,
       hours: entity.hours,
-      reason: entity.reason,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };
