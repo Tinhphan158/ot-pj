@@ -1,0 +1,20 @@
+/dist
+/node_modules
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Env
+.env
+.env.local
+
+# OS / editor
+.DS_Store
+*.pem
+
+# Prisma
+prisma/*.db

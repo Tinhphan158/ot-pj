@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ot_management_pg
+    restart: unless-stopped
+    ports:
+      # host 5434 -> container 5432 (avoid collisions with a local Postgres)
+      - '5434:5432'
+    environment:
+      POSTGRES_USER: ot
+      POSTGRES_PASSWORD: ot
+      POSTGRES_DB: ot_management
+    volumes:
+      - ot_management_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ot -d ot_management']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+    container_name: ot_management_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '5000:5000'
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      CORS_ORIGINS: http://localhost:3002,http://192.168.2.158:3002
+      # Talk to the postgres service over the compose network.
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ot
+      DB_PASSWORD: ot
+      DB_DATABASE: ot_management
+      JWT_ACCESS_SECRET: dev-access-secret-please-change-in-production-0123456789
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_SECRET: dev-refresh-secret-please-change-in-production-0123456789
+      JWT_REFRESH_EXPIRES_IN: 7d
+      # Mail is optional — leave blank to log OTP to the console.
+      MAIL_HOST: ''
+      MAIL_PORT: 587
+      MAIL_USER: ''
+      MAIL_PASSWORD: ''
+      MAIL_FROM: OT Management <no-reply@ot.local>
+      # Seed demo data on first boot. Set to 'true' if you want demo users/records.
+      RUN_SEED: 'false'
+
+volumes:
+  ot_management_pg:

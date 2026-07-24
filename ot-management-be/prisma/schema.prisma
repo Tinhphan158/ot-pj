@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String
+  name         String
+  avatar       String?
+  refreshToken String?  @map("refresh_token")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  overtimes Overtime[]
+
+  @@map("users")
+}
+
+model Overtime {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  startTime String   @map("start_time")
+  endTime   String   @map("end_time")
+  hours     Float
+  reason    String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([date])
+  @@map("overtimes")
+}

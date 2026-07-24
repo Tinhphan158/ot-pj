@@ -1,0 +1,41 @@
+# ───────── Dependencies ─────────
+node_modules/
+.pnpm-store/
+
+# ───────── Env / secrets ─────────
+.env
+.env.local
+.env.*.local
+# keep the example templates tracked
+!.env.example
+
+# ───────── Build output ─────────
+dist/
+build/
+out/
+.next/
+*.tsbuildinfo
+next-env.d.ts
+
+# ───────── Logs ─────────
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ───────── Prisma local db ─────────
+prisma/*.db
+
+# ───────── OS / editor ─────────
+.DS_Store
+Thumbs.db
+*.pem
+.idea/
+.vscode/
+*.swp
+
+# ───────── Misc stray files ─────────
+# accidental screenshot dump in the FE folder
+--full-page

@@ -1,0 +1,82 @@
+# Combined stack: Postgres + NestJS API + Next.js web.
+# Values come from the .env file next to this compose file.
+# Run from the repo root:  docker compose up -d --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ot_management_pg
+    restart: unless-stopped
+    ports:
+      - '${DB_HOST_PORT:-5434}:5432'
+    environment:
+      POSTGRES_USER: ${DB_USER:-ot}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ot}
+      POSTGRES_DB: ${DB_NAME:-ot_management}
+    volumes:
+      - ot_management_pg:/var/lib/postgresql/data
+    networks:
+      - ot_net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-ot} -d ${DB_NAME:-ot_management}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./ot-management-be
+    container_name: ot_management_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '${API_PORT:-5000}:5000'
+    networks:
+      - ot_net
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      # Allow the FE origin (and localhost) through CORS.
+      CORS_ORIGINS: http://${WEB_HOST:-localhost}:${WEB_PORT:-3002},http://localhost:${WEB_PORT:-3002}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USER:-ot}
+      DB_PASSWORD: ${DB_PASSWORD:-ot}
+      DB_DATABASE: ${DB_NAME:-ot_management}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: 7d
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-OT Management <no-reply@ot.local>}
+      RUN_SEED: ${RUN_SEED:-false}
+
+  web:
+    build:
+      context: ./ot-management-fe
+      args:
+        # Baked into the browser bundle at build time — must be reachable FROM
+        # THE BROWSER, so it uses the host/IP the API is published on.
+        NEXT_PUBLIC_BACKEND_API_URL: http://${API_HOST:-localhost}:${API_PORT:-5000}/api
+        NEXT_PUBLIC_APP_URL: http://${WEB_HOST:-localhost}:${WEB_PORT:-3002}
+    container_name: ot_management_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '${WEB_PORT:-3002}:3002'
+    networks:
+      - ot_net
+    environment:
+      NODE_ENV: production
+
+volumes:
+  ot_management_pg:
+
+networks:
+  ot_net:
+    driver: bridge

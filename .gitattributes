@@ -1,0 +1,15 @@
+# Normalize line endings on checkin; let git manage the working copy.
+* text=auto
+
+# Files that MUST stay LF (break on Windows CRLF inside Linux containers)
+*.sh          text eol=lf
+Dockerfile    text eol=lf
+*.yml         text eol=lf
+*.yaml        text eol=lf
+.env.example  text eol=lf
+
+# Binary / generated — never touch
+pnpm-lock.yaml -text
+*.png binary
+*.jpg binary
+*.ico binary
