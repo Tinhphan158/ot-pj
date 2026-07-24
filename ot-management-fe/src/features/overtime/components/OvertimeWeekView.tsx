@@ -109,7 +109,7 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
                       <div key={row.id} className="flex items-center">
                         <div className="flex w-100 shrink-0 items-center gap-2 pr-3">
                           <OvertimeUserAvatar userId={row.userId} name={row.user?.name ?? '—'} avatarUrl={row.user?.avatar} className="size-6" />
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col">
                             <span className="flex min-w-0 items-center gap-1.5 truncate text-sm">
                               <span className="truncate font-medium">{row.user?.name ?? '—'}</span>
                                 {isMine && (
