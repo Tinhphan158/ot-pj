@@ -10,8 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
 import { getInitials } from '@/shared/utils/format';
+import { userColor } from '@/shared/utils/userColor';
 import type { User } from '@/shared/api/types';
 import { useLogout } from '@/features/auth/hooks/mutations/useLogout';
 
@@ -22,7 +23,8 @@ export function AppUserMenu({ user }: { user: User }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <Avatar className="size-9 border">
+        <Avatar className="size-9 border-2" style={{ borderColor: userColor(user.id) }}>
+          {user.avatar ? <AvatarImage src={user.avatar} alt={user.name} /> : null}
           <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
             {getInitials(user.name)}
           </AvatarFallback>

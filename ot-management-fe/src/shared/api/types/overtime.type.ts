@@ -2,6 +2,7 @@ export interface OvertimeUserSummary {
   id: string;
   name: string;
   email: string;
+  avatar: string | null;
 }
 
 export interface Overtime {

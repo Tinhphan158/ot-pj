@@ -16,6 +16,7 @@ export class OvertimeMapper {
             id: entity.user.id,
             name: entity.user.name,
             email: entity.user.email,
+            avatar: entity.user.avatar,
           }
         : null,
       date: toDateString(entity.date),

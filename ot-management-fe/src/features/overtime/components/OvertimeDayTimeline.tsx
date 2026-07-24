@@ -81,7 +81,7 @@ export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: Over
           return (
             <div key={row.id} className="flex items-center">
               <div className="flex w-100 shrink-0 items-center gap-2 pr-3">
-                <OvertimeUserAvatar userId={row.userId} name={row.user?.name ?? '—'} />
+                <OvertimeUserAvatar userId={row.userId} name={row.user?.name ?? '—'} avatarUrl={row.user?.avatar} />
                 <div className="min-w-0">
                   <span className="flex items-center gap-1.5 truncate text-sm font-medium">
                     <span className="truncate">{row.user?.name ?? '—'}</span>

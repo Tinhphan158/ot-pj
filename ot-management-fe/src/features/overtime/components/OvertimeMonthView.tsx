@@ -17,6 +17,7 @@ interface OvertimeMonthViewProps {
 interface UserRow {
   id: string;
   name: string;
+  avatar: string | null;
   total: number;
 }
 
@@ -42,7 +43,7 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
 
     for (const o of overtimes) {
       if (!userMap.has(o.userId)) {
-        userMap.set(o.userId, { id: o.userId, name: o.user?.name ?? '—', total: 0 });
+        userMap.set(o.userId, { id: o.userId, name: o.user?.name ?? '—', avatar: o.user?.avatar ?? null, total: 0 });
       }
       const row = userMap.get(o.userId)!;
       row.total += o.hours;
@@ -123,7 +124,7 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
                 <tr key={row.id} className={cn(mine && 'bg-primary/5')}>
                   <td className={cn('sticky left-0 z-10 border-b px-3 py-1.5', mine ? 'bg-primary/5' : 'bg-card')}>
                     <span className="flex items-center gap-2">
-                      <OvertimeUserAvatar userId={row.id} name={row.name} className="size-6" />
+                      <OvertimeUserAvatar userId={row.id} name={row.name} avatarUrl={row.avatar} className="size-6" />
                       <span className="truncate font-medium">{row.name}</span>
                       {mine && (
                         <span className="rounded bg-foreground px-1.5 py-0.5 text-[10px] font-semibold text-background">

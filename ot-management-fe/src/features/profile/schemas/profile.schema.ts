@@ -2,6 +2,12 @@ import { z } from 'zod';
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1, 'Vui lòng nhập họ tên').max(120),
+  avatar: z
+    .string()
+    .max(1000)
+    .url('Đường dẫn ảnh không hợp lệ')
+    .optional()
+    .or(z.literal('')),
 });
 
 export const changePasswordSchema = z

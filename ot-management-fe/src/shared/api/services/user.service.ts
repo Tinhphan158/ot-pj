@@ -4,6 +4,7 @@ import type { MessageResponse, User } from '@/shared/api/types';
 
 export interface UpdateProfilePayload {
   name: string;
+  avatar?: string;
 }
 
 export interface ChangePasswordPayload {
