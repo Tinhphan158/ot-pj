@@ -1,4 +1,4 @@
-import { CalendarRange, type LucideIcon } from 'lucide-react';
+import { CalendarRange, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   label: string;
@@ -8,4 +8,5 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Overtime management', href: '/team-overtime', icon: CalendarRange },
+  { label: 'Hồ sơ', href: '/profile', icon: UserRound },
 ];

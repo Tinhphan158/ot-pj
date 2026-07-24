@@ -13,4 +13,8 @@ export const API_PATHS = {
     RANGE: '/overtimes/range',
     DETAIL: (id: string) => `/overtimes/${id}`,
   },
+  USERS: {
+    ME: '/users/me',
+    ME_PASSWORD: '/users/me/password',
+  },
 } as const;

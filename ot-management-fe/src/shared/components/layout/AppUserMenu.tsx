@@ -41,9 +41,9 @@ export function AppUserMenu({ user }: { user: User }) {
           Toggle theme
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <a href="/team-overtime" className="flex items-center gap-2">
+          <a href="/profile" className="flex items-center gap-2">
             <UserIcon className="size-4" />
-            Overtime
+            Hồ sơ
           </a>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
