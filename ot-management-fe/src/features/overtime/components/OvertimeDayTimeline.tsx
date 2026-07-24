@@ -58,7 +58,7 @@ export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: Over
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="flex">
-        <div className="w-100 shrink-0" />
+        <div className="w-80 shrink-0" />
         <div className="relative h-5 flex-1">
           {hourTicks.map((tick) => (
             <span
@@ -80,7 +80,7 @@ export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: Over
           const color = userColor(row.userId);
           return (
             <div key={row.id} className="flex items-center">
-              <div className="flex w-100 shrink-0 items-center gap-2 pr-3">
+              <div className="flex w-80 shrink-0 items-center gap-2 pr-3">
                 <OvertimeUserAvatar userId={row.userId} name={row.user?.name ?? '—'} avatarUrl={row.user?.avatar} />
                 <div className="min-w-0">
                   <span className="flex items-center gap-1.5 truncate text-sm font-medium">
