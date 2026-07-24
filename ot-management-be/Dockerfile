@@ -6,12 +6,15 @@ FROM node:22-slim
 
 ENV PNPM_HOME=/pnpm
 ENV PATH="/pnpm:$PATH"
+# Never let corepack block the build waiting for a TTY confirmation prompt.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-# corepack -> pnpm, plus openssl for the Prisma migration engine.
+# corepack -> pnpm, plus openssl for the Prisma migration engine and
+# build-essential/python3 so bcrypt can compile on any CPU arch if no prebuilt exists.
 RUN corepack enable \
   && corepack prepare pnpm@9.15.0 --activate \
   && apt-get update \
-  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && apt-get install -y --no-install-recommends openssl ca-certificates python3 build-essential \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

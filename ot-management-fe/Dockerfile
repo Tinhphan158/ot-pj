@@ -5,6 +5,10 @@ FROM node:22-alpine
 
 ENV PNPM_HOME=/pnpm
 ENV PATH="/pnpm:$PATH"
+# Never let corepack block the build waiting for a TTY confirmation prompt.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+# Next 16 / Turbopack build can be memory hungry — raise the heap ceiling.
+ENV NODE_OPTIONS=--max-old-space-size=2048
 
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 

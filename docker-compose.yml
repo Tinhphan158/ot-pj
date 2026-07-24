@@ -44,9 +44,11 @@ services:
       DB_USERNAME: ${DB_USER:-ot}
       DB_PASSWORD: ${DB_PASSWORD:-ot}
       DB_DATABASE: ${DB_NAME:-ot_management}
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      # Defaults kick in when .env is missing/empty so a fresh clone still boots.
+      # CHANGE THESE for any real deployment.
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret-please-change-in-production-0123456789}
       JWT_ACCESS_EXPIRES_IN: 15m
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-please-change-in-production-0123456789}
       JWT_REFRESH_EXPIRES_IN: 7d
       MAIL_HOST: ${MAIL_HOST:-}
       MAIL_PORT: ${MAIL_PORT:-587}
