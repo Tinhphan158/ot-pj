@@ -21,8 +21,11 @@ WORKDIR /app
 
 # Install deps first (better layer caching). NODE_ENV is left unset here so
 # devDependencies (nest cli, ts-node, prisma) are available for build/migrate/seed.
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+# The BuildKit cache mount keeps the pnpm store between builds, so a cancelled /
+# retried install resumes from what was already downloaded instead of from zero.
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+  pnpm install --frozen-lockfile --store-dir=/pnpm/store
 
 # App source + generate client + compile.
 COPY . .

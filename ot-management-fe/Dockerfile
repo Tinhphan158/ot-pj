@@ -16,8 +16,11 @@ WORKDIR /app
 
 # Install deps first (cached). Keep NODE_ENV unset so devDependencies
 # (tailwind, typescript, eslint) are present for `next build`.
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+# The BuildKit cache mount keeps the pnpm store between builds, so a cancelled /
+# retried install resumes from what was already downloaded instead of from zero.
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+  pnpm install --frozen-lockfile --store-dir=/pnpm/store
 
 COPY . .
 
