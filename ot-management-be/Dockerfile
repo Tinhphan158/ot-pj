@@ -24,8 +24,11 @@ WORKDIR /app
 # The BuildKit cache mount keeps the pnpm store between builds, so a cancelled /
 # retried install resumes from what was already downloaded instead of from zero.
 COPY package.json pnpm-lock.yaml .npmrc ./
+# Override with a faster mirror on slow networks, e.g.
+#   --build-arg NPM_REGISTRY=https://registry.npmmirror.com/
+ARG NPM_REGISTRY=https://registry.npmjs.org/
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-  pnpm install --frozen-lockfile --store-dir=/pnpm/store
+  pnpm install --frozen-lockfile --store-dir=/pnpm/store --registry=$NPM_REGISTRY
 
 # App source + generate client + compile.
 COPY . .

@@ -25,6 +25,8 @@ services:
   api:
     build:
       context: ./ot-management-be
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
     container_name: ot_management_api
     restart: unless-stopped
     depends_on:
@@ -61,6 +63,7 @@ services:
     build:
       context: ./ot-management-fe
       args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
         # Baked into the browser bundle at build time — must be reachable FROM
         # THE BROWSER, so it uses the host/IP the API is published on.
         NEXT_PUBLIC_BACKEND_API_URL: http://${API_HOST:-localhost}:${API_PORT:-5000}/api
