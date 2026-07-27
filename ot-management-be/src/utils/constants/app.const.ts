@@ -9,7 +9,7 @@ export const ERRORS = {
 
 export const OVERTIME = {
   /** Company-wide quota: overtime records everyone combined may register on one day. */
-  MAX_ENTRIES_PER_DAY: 5,
+  MAX_ENTRIES_PER_DAY: 6,
 } as const;
 
 export const OTP = {
