@@ -48,13 +48,10 @@ export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: Ov
       if (next > max) max = next;
     }
 
-    const list = [...userMap.values()].sort((a, b) => {
-      if (a.id === currentUserId) return -1;
-      if (b.id === currentUserId) return 1;
-      return a.name.localeCompare(b.name);
-    });
+    // Most overtime first; the "You" row is found by its highlight, not by position.
+    const list = [...userMap.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
     return { rows: list, cellMap: cells, maxHours: max };
-  }, [overtimes, currentUserId]);
+  }, [overtimes]);
 
   if (rows.length === 0) {
     return (
