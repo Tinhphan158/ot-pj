@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { computeOvertimeHours, overtimeRangesOverlap } from '@/utils';
+import { computeOvertimeHours, overtimeRangesOverlap, OVERTIME } from '@/utils';
 import { ConflictException, ForbiddenException, NotFoundException } from '@/common';
 import type { JwtPayload } from '@/common';
 import { OvertimeRepository } from './overtime.repository';
@@ -30,6 +30,20 @@ export class OvertimeService {
     return entity;
   }
 
+  /**
+   * The whole company shares a quota of MAX_ENTRIES_PER_DAY records per day, so
+   * this counts everyone's overtime on that date, not just the actor's.
+   */
+  private async assertDailyLimit(date: Date): Promise<void> {
+    const registered = await this.overtimeRepository.countByDate(date);
+    if (registered >= OVERTIME.MAX_ENTRIES_PER_DAY) {
+      throw new ConflictException(
+        `Mỗi ngày cả công ty chỉ được đăng ký tối đa ${OVERTIME.MAX_ENTRIES_PER_DAY} đơn OT. Ngày này đã có đủ ${registered} đơn.`,
+        'OVERTIME_DAILY_LIMIT',
+      );
+    }
+  }
+
   /** Reject a new/edited range that overlaps another OT of the same user on that day. */
   private async assertNoOverlap(
     userId: string,
@@ -58,6 +72,7 @@ export class OvertimeService {
 
   async create(actor: JwtPayload, dto: CreateOvertimeDto): Promise<OvertimeResponseDto> {
     const date = new Date(dto.date);
+    await this.assertDailyLimit(date);
     await this.assertNoOverlap(actor.id, date, dto.startTime, dto.endTime);
 
     const hours = computeOvertimeHours(dto.startTime, dto.endTime);
@@ -83,6 +98,8 @@ export class OvertimeService {
     const date = dto.date !== undefined ? new Date(dto.date) : current.date;
 
     if (timesChanged || dto.date !== undefined) {
+      // Moving an OT to another day adds one to that day's quota; staying put doesn't.
+      if (date.getTime() !== current.date.getTime()) await this.assertDailyLimit(date);
       await this.assertNoOverlap(current.userId, date, startTime, endTime, id);
     }
 

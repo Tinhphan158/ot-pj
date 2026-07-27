@@ -7,6 +7,11 @@ export const ERRORS = {
   },
 } as const;
 
+export const OVERTIME = {
+  /** Company-wide quota: overtime records everyone combined may register on one day. */
+  MAX_ENTRIES_PER_DAY: 5,
+} as const;
+
 export const OTP = {
   TTL_MS: 5 * 60 * 1000,
   LENGTH: 6,

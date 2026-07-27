@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Overtime } from '@/shared/api';
 import { notify } from '@/shared/utils/notify';
-import { getErrorMessage } from '@/shared/utils/api-error';
+import { getErrorMessage, toApiError } from '@/shared/utils/api-error';
 import { useCurrentUser } from '@/features/auth/store/auth.store';
 import type { OvertimeFormValues } from '@/features/overtime/schemas/overtime.schema';
 import { useCreateOvertimeMutation } from './mutations/useCreateOvertimeMutation';
@@ -52,7 +52,13 @@ export function useOvertimeActions() {
       }
       handleDrawerOpenChange(false);
     } catch (error) {
-      notify({ type: 'error', title: 'Could not save overtime', description: getErrorMessage(error) });
+      const apiError = toApiError(error);
+      // Hitting the per-day cap is a rule the user can act on, not a failure.
+      if (apiError.errorCode === 'OVERTIME_DAILY_LIMIT') {
+        notify({ type: 'warning', title: 'Đã đạt giới hạn OT trong ngày', description: apiError.message });
+        return;
+      }
+      notify({ type: 'error', title: 'Could not save overtime', description: apiError.message });
     }
   };
 
