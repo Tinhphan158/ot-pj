@@ -24,10 +24,11 @@ export function AppMainLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  // The shell stays translucent so the cosmic backdrop reads through it.
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    <div className="flex min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r bg-sidebar px-3 py-4 lg:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r bg-sidebar/70 px-3 py-4 backdrop-blur-xl lg:flex">
         <SidebarBrand />
         <div className="mt-6 flex-1">
           <AppSidebarNav items={navItems} />
@@ -36,7 +37,7 @@ export function AppMainLayout({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b bg-background/80 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b bg-background/60 px-4 backdrop-blur-xl sm:px-6">
           <div className="flex items-center gap-2">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
@@ -44,7 +45,7 @@ export function AppMainLayout({ children }: { children: ReactNode }) {
                   <Menu className="size-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 bg-sidebar p-3">
+              <SheetContent side="left" className="w-64 bg-sidebar/90 p-3 backdrop-blur-xl">
                 <SheetTitle className="sr-only">Navigation</SheetTitle>
                 <SidebarBrand />
                 <div className="mt-6">

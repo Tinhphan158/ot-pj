@@ -25,6 +25,7 @@ import { OvertimeWeekView } from '@/features/overtime/components/OvertimeWeekVie
 import { OvertimeMonthView } from '@/features/overtime/components/OvertimeMonthView';
 import { OvertimeYearView } from '@/features/overtime/components/OvertimeYearView';
 import { OvertimeDrawer } from '@/features/overtime/components/dialog/OvertimeDrawer';
+import { OvertimeCrowdedDayDialog } from '@/features/overtime/components/dialog/OvertimeCrowdedDayDialog';
 
 const VIEW_OPTIONS: { value: OvertimeView; label: string }[] = [
   { value: 'day', label: 'Day' },
@@ -174,6 +175,13 @@ export default function TeamOvertime() {
         onSubmit={actions.handleSubmit}
         onDelete={actions.handleDelete}
         isDeleting={actions.isDeleting}
+      />
+
+      <OvertimeCrowdedDayDialog
+        day={actions.crowdedDay}
+        onOpenChange={actions.handleCrowdedDayOpenChange}
+        onConfirm={actions.handleCrowdedDayConfirm}
+        isSubmitting={actions.isSubmitting}
       />
     </AppPageContainer>
   );

@@ -19,11 +19,6 @@ export class OvertimeRepository {
     return this.db.overtime.findUnique({ where: { id }, include: overtimeWithUserInclude });
   }
 
-  /** How many overtime records the whole company has on a given day. */
-  countByDate(date: Date): Promise<number> {
-    return this.db.overtime.count({ where: { date } });
-  }
-
   findByUserAndDate(userId: string, date: Date): Promise<OvertimeEntity[]> {
     return this.db.overtime.findMany({ where: { userId, date }, include: overtimeWithUserInclude });
   }
