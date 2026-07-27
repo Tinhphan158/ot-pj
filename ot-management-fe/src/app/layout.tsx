@@ -5,6 +5,7 @@ import { AppProvider } from '@/shared/providers/AppProvider';
 export const metadata: Metadata = {
   title: 'OT Management',
   description: 'Overtime registration, approval and reporting',
+  icons: { icon: [{ url: '/icon.svg', type: 'image/svg+xml' }] },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
