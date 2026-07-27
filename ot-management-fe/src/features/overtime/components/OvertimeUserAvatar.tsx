@@ -18,7 +18,7 @@ export function OvertimeUserAvatar({ userId, name, avatarUrl, className }: Overt
   return (
     <span
       className={cn(
-        'flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 text-[11px] font-semibold text-white',
+        'flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 text-[11px] font-semibold text-white',
         className,
       )}
       style={{ borderColor: color, backgroundColor: color }}
