@@ -12,6 +12,7 @@ import { JwtAuthModule } from '@/modules/jwt';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { UserModule } from '@/modules/user/user.module';
 import { OvertimeModule } from '@/modules/overtime/overtime.module';
+import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 import { MailModule } from '@/modules/mail/mail.module';
 
 @Module({
@@ -29,6 +30,7 @@ import { MailModule } from '@/modules/mail/mail.module';
     AuthModule,
     UserModule,
     OvertimeModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

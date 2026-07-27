@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const ACCESS_TOKEN_COOKIE = 'access_token';
 const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
+/** Where an authenticated user lands when they have no explicit destination. */
+const HOME_PATH = '/dashboard';
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -11,14 +13,14 @@ export function proxy(request: NextRequest) {
   // Root → route by auth state.
   if (pathname === '/') {
     const url = request.nextUrl.clone();
-    url.pathname = hasToken ? '/team-overtime' : '/login';
+    url.pathname = hasToken ? HOME_PATH : '/login';
     return NextResponse.redirect(url);
   }
 
   // Authenticated user on a public (auth) page → send into the app.
   if (isPublic && hasToken) {
     const url = request.nextUrl.clone();
-    url.pathname = '/team-overtime';
+    url.pathname = HOME_PATH;
     url.search = '';
     return NextResponse.redirect(url);
   }

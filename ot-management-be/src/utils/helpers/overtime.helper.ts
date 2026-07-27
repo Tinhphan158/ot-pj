@@ -10,6 +10,11 @@ export function computeOvertimeHours(startTime: string, endTime: string): number
   return Math.round((minutes / 60) * 100) / 100;
 }
 
+/** Round an hour total to 2 decimals — float sums drift (8.4 + 2.1 = 10.500000000000002). */
+export function roundHours(hours: number): number {
+  return Math.round(hours * 100) / 100;
+}
+
 /** "HH:mm" -> minutes since midnight. */
 function toMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { overtimeKeys, type Overtime } from '@/shared/api';
+import { dashboardKeys, overtimeKeys, type Overtime } from '@/shared/api';
 import { getSocket } from '@/lib/socket';
 import { notify } from '@/shared/utils/notify';
 import { formatDate } from '@/shared/utils/format';
@@ -35,6 +35,7 @@ export function useOvertimeRealtime() {
     const makeHandler = (type: keyof typeof VERBS) => (event: OvertimeEvent) => {
       // Always refresh so every open client stays in sync.
       queryClient.invalidateQueries({ queryKey: overtimeKeys.all, refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all, refetchType: 'all' });
 
       // Don't notify the person who made the change.
       if (event.actor?.id === currentUserId) return;

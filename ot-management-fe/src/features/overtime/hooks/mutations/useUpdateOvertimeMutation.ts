@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { overtimeKeys, overtimeService, type UpdateOvertimePayload } from '@/shared/api';
+import { dashboardKeys, overtimeKeys, overtimeService, type UpdateOvertimePayload } from '@/shared/api';
 
 export function useUpdateOvertimeMutation() {
   const queryClient = useQueryClient();
@@ -10,6 +10,7 @@ export function useUpdateOvertimeMutation() {
       overtimeService.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: overtimeKeys.all, refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all, refetchType: 'all' });
     },
   });
 }

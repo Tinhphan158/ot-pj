@@ -9,6 +9,9 @@ export const API_PATHS = {
     VERIFY_OTP: '/auth/verify-otp',
     RESET_PASSWORD: '/auth/reset-password',
   },
+  DASHBOARD: {
+    BASE: '/dashboard',
+  },
   OVERTIMES: {
     BASE: '/overtimes',
     RANGE: '/overtimes/range',

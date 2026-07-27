@@ -28,7 +28,7 @@ export default function Login() {
     try {
       await login.mutateAsync(values);
       notify({ type: 'success', title: 'Welcome back!' });
-      const redirect = searchParams.get('redirect') || '/team-overtime';
+      const redirect = searchParams.get('redirect') || '/dashboard';
       router.replace(redirect);
     } catch (error) {
       notify({ type: 'error', title: 'Sign in failed', description: getErrorMessage(error) });
