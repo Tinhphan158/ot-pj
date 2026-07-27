@@ -69,6 +69,7 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
                   <div className="relative min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="truncate text-sm font-medium">{member.name}</span>
+                      <span className="truncate text-sx font-medium">{member.email}</span>
                       {mine && (
                         <span className="rounded bg-foreground px-1.5 py-0.5 text-[10px] font-semibold text-background">
                           You
