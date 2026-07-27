@@ -75,12 +75,14 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
                         </span>
                       )}
                     </div>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {member.email}
-                    </span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {member.entries} đơn · {member.days} ngày
-                    </span>
+                    <div className='flex flex-col gap-1'>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {member.email}
+                      </span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {member.entries} đơn · {member.days} ngày
+                      </span>
+                    </div>
                   </div>
                   <span className="relative shrink-0 text-sm font-semibold tabular-nums">
                     {formatHours(member.hours)}
