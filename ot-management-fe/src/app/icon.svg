@@ -1,7 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
   <!-- Same mark as SidebarBrand: a rounded primary square with the lucide Clock glyph.
-       Colors are literal because SVG favicons can't read the app's CSS variables —
-       #2d5ed4 is --primary (oklch(0.52 0.19 264)) and #fafbfe is --primary-foreground. -->
+       Hex is hard-coded because an SVG favicon cannot read the app's CSS variables:
+       #2d5ed4 is the primary token, #fafbfe is primary-foreground.
+       Keep the double-hyphen sequence out of this comment or the XML stops parsing
+       and browsers silently fall back to their default icon. -->
   <rect width="32" height="32" rx="10.5" fill="#2d5ed4" />
   <g
     transform="translate(6.5 6.5) scale(0.79167)"
