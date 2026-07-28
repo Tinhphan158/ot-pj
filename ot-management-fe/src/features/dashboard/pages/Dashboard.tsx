@@ -3,12 +3,14 @@
 import { useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { AppPageContainer } from '@/shared/components/custome';
+import { cn } from '@/shared/utils/cn';
 import { useCurrentUser } from '@/features/auth/store/auth.store';
 import { getRange, shiftAnchor } from '@/features/overtime/utils/period';
 import { useOvertimeRealtime } from '@/features/overtime/hooks/useOvertimeRealtime';
 import { useDashboardQuery } from '@/features/dashboard/hooks/queries/useDashboardQuery';
 import { buildTrend, type DashboardPeriod } from '@/features/dashboard/utils/trend';
 import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader';
+import { DashboardPersonalStats } from '@/features/dashboard/components/DashboardPersonalStats';
 import { DashboardStats } from '@/features/dashboard/components/DashboardStats';
 import { DashboardTrendChart } from '@/features/dashboard/components/DashboardTrendChart';
 import { DashboardTopMembers } from '@/features/dashboard/components/DashboardTopMembers';
@@ -44,7 +46,7 @@ export default function Dashboard() {
       />
 
       {query.isLoading || !stats ? (
-        <div className="flex min-h-[320px] items-center justify-center rounded-xl border bg-card">
+        <div className="animate-in fade-in flex min-h-[320px] items-center justify-center rounded-xl border bg-card duration-300">
           {query.isError ? (
             <span className="text-sm text-destructive">Could not load the statistics.</span>
           ) : (
@@ -52,10 +54,26 @@ export default function Dashboard() {
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          <DashboardStats stats={stats} />
+        // The query keeps the previous data while refetching, so switching period
+        // never unmounts this. Dimming it instead is the fade-out, and the
+        // fade-back-in lands when the new numbers arrive.
+        <div
+          className={cn(
+            'flex flex-col gap-5 transition-opacity duration-300 ease-out',
+            query.isFetching ? 'opacity-50' : 'opacity-100',
+          )}
+        >
+          <section className="animate-in fade-in slide-in-from-bottom-2 flex flex-col gap-2 duration-500 ease-out">
+            <h2 className="text-sm font-medium text-muted-foreground">Your overtime</h2>
+            <DashboardPersonalStats stats={stats} currentUserId={currentUser?.id} />
+          </section>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <section className="animate-in fade-in slide-in-from-bottom-2 flex flex-col gap-2 delay-75 duration-500 ease-out">
+            <h2 className="text-sm font-medium text-muted-foreground">Company-wide</h2>
+            <DashboardStats stats={stats} />
+          </section>
+
+          <div className="animate-in fade-in slide-in-from-bottom-2 grid grid-cols-1 gap-4 delay-150 duration-500 ease-out lg:grid-cols-3">
             <div className="lg:col-span-2">
               <DashboardTrendChart
                 title={TREND_COPY[period].title}

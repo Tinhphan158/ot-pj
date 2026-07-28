@@ -50,6 +50,27 @@ export function useOvertimeActions() {
     setDrawerOpen(true);
   };
 
+  /**
+   * Save a new range produced by dragging a bar's edge. Returns whether it
+   * stuck, so the bar knows to keep the dragged position or snap back.
+   */
+  const resizeOvertime = async (overtime: Overtime, startTime: string, endTime: string): Promise<boolean> => {
+    if (overtime.userId !== currentUser?.id) {
+      notify({ type: 'info', title: 'Only the owner can edit this', description: 'This overtime entry belongs to someone else.' });
+      return false;
+    }
+
+    try {
+      // The range is the only thing a drag touches, so leave the date alone.
+      await updateMutation.mutateAsync({ id: overtime.id, payload: { startTime, endTime } });
+      notify({ type: 'success', title: 'Overtime updated', description: `${startTime}–${endTime}` });
+      return true;
+    } catch (error) {
+      notify({ type: 'error', title: 'Could not save overtime', description: getErrorMessage(error) });
+      return false;
+    }
+  };
+
   const handleDrawerOpenChange = (open: boolean) => {
     setDrawerOpen(open);
     if (!open) setEditing(null);
@@ -136,6 +157,7 @@ export function useOvertimeActions() {
     crowdedDay,
     openCreate,
     openEdit,
+    resizeOvertime,
     handleDrawerOpenChange,
     handleSubmit,
     handleCrowdedDayConfirm,

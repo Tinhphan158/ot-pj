@@ -146,7 +146,12 @@ export default function TeamOvertime() {
           Could not load overtime for this period.
         </div>
       ) : view === 'day' ? (
-        <OvertimeDayTimeline overtimes={items} currentUserId={currentUser?.id} onSelect={actions.openEdit} />
+        <OvertimeDayTimeline
+          overtimes={items}
+          currentUserId={currentUser?.id}
+          onSelect={actions.openEdit}
+          onResize={actions.resizeOvertime}
+        />
       ) : view === 'week' ? (
         <OvertimeWeekView
           overtimes={items}
@@ -154,6 +159,7 @@ export default function TeamOvertime() {
           currentUserId={currentUser?.id}
           onSelectDay={goToDay}
           onSelect={actions.openEdit}
+          onResize={actions.resizeOvertime}
         />
       ) : view === 'month' ? (
         <OvertimeMonthView

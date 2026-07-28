@@ -1,16 +1,16 @@
 'use client';
 
 import { useMemo } from 'react';
-import { cn } from '@/shared/utils/cn';
-import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { userColor } from '@/features/overtime/utils/userColor';
+import { OvertimeBar, type OvertimeBarProps } from '@/features/overtime/components/OvertimeBar';
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 
 interface OvertimeDayTimelineProps {
   overtimes: Overtime[];
   currentUserId?: string;
   onSelect?: (overtime: Overtime) => void;
+  onResize?: OvertimeBarProps['onResize'];
 }
 
 function toMinutes(time: string): number {
@@ -18,7 +18,12 @@ function toMinutes(time: string): number {
   return h * 60 + (m || 0);
 }
 
-export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: OvertimeDayTimelineProps) {
+export function OvertimeDayTimeline({
+  overtimes,
+  currentUserId,
+  onSelect,
+  onResize,
+}: OvertimeDayTimelineProps) {
   const rows = useMemo(() => {
     return [...overtimes].sort((a, b) => {
       const aMine = a.userId === currentUserId ? 0 : 1;
@@ -75,9 +80,6 @@ export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: Over
       <div className="flex flex-col gap-1.5">
         {rows.map((row) => {
           const isMine = row.userId === currentUserId;
-          const left = percent(toMinutes(row.startTime));
-          const width = Math.max(percent(toMinutes(row.endTime)) - left, 2);
-          const color = userColor(row.userId);
           return (
             <div key={row.id} className="flex items-center">
               <div className="flex w-80 shrink-0 items-center gap-2 pr-3">
@@ -103,22 +105,15 @@ export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: Over
                     style={{ left: `${percent(tick)}%` }}
                   />
                 ))}
-                <button
-                  type="button"
-                  onClick={() => onSelect?.(row)}
-                  className={cn(
-                    'absolute top-1/2 flex h-7 -translate-y-1/2 items-center justify-between gap-2 overflow-hidden rounded-md px-2 text-xs text-white shadow-sm transition-[filter] hover:brightness-110',
-                    onSelect && 'cursor-pointer',
-                    isMine && 'ring-2 ring-foreground ring-offset-1 ring-offset-card',
-                  )}
-                  style={{ left: `${left}%`, width: `${width}%`, backgroundColor: color }}
-                  title={`${row.user?.name ?? ''} · ${row.startTime}–${row.endTime}`}
-                >
-                  <span className="truncate font-medium">
-                    {row.startTime}–{row.endTime}
-                  </span>
-                  <span className="shrink-0 opacity-90">{formatHours(row.hours)}</span>
-                </button>
+                <OvertimeBar
+                  overtime={row}
+                  color={userColor(row.userId)}
+                  isMine={isMine}
+                  domainStart={domain.start}
+                  domainSpan={span}
+                  onSelect={onSelect}
+                  onResize={onResize}
+                />
               </div>
             </div>
           );
@@ -129,7 +124,10 @@ export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: Over
         <span className="flex items-center gap-1.5">
           <span className="size-3 rounded-full ring-2 ring-foreground" /> = You
         </span>
-        <span>Each colour is a person · click a bar to edit</span>
+        <span>
+          Each colour is a person · click a bar to edit · drag either end of your own bar to adjust it
+          in 30-minute steps
+        </span>
       </div>
     </div>
   );

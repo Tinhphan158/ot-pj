@@ -2,9 +2,10 @@
 
 import { useMemo } from 'react';
 import { cn } from '@/shared/utils/cn';
-import { formatHours, weekdayName } from '@/shared/utils/format';
+import { weekdayName } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { userColor } from '@/features/overtime/utils/userColor';
+import { OvertimeBar, type OvertimeBarProps } from '@/features/overtime/components/OvertimeBar';
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 import { addDays, isSameDay, timeToMinutes, toDateStr } from '@/features/overtime/utils/period';
 
@@ -14,9 +15,17 @@ interface OvertimeWeekViewProps {
   currentUserId?: string;
   onSelectDay: (date: string) => void;
   onSelect?: (overtime: Overtime) => void;
+  onResize?: OvertimeBarProps['onResize'];
 }
 
-export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelectDay, onSelect }: OvertimeWeekViewProps) {
+export function OvertimeWeekView({
+  overtimes,
+  weekStart,
+  currentUserId,
+  onSelectDay,
+  onSelect,
+  onResize,
+}: OvertimeWeekViewProps) {
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
   const domain = useMemo(() => {
@@ -102,8 +111,6 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
                 <div className="flex flex-col gap-1">
                   {records.map((row) => {
                     const isMine = row.userId === currentUserId;
-                    const left = percent(timeToMinutes(row.startTime));
-                    const width = Math.max(percent(timeToMinutes(row.endTime)) - left, 2);
                     const color = userColor(row.userId);
                     return (
                       <div key={row.id} className="flex items-center">
@@ -130,22 +137,16 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
                               style={{ left: `${percent(tick)}%` }}
                             />
                           ))}
-                          <button
-                            type="button"
-                            onClick={() => onSelect?.(row)}
-                            className={cn(
-                              'absolute top-1/2 flex h-6 -translate-y-1/2 items-center justify-between gap-2 overflow-hidden rounded px-2 text-xs text-white shadow-sm transition-[filter] hover:brightness-110',
-                              onSelect && 'cursor-pointer',
-                              isMine && 'ring-2 ring-foreground ring-offset-1 ring-offset-card',
-                            )}
-                            style={{ left: `${left}%`, width: `${width}%`, backgroundColor: color }}
-                            title={`${row.user?.name ?? ''} · ${row.startTime}–${row.endTime}`}
-                          >
-                            <span className="truncate font-medium">
-                              {row.startTime}–{row.endTime}
-                            </span>
-                            <span className="shrink-0 opacity-90">{formatHours(row.hours)}</span>
-                          </button>
+                          <OvertimeBar
+                            overtime={row}
+                            color={color}
+                            isMine={isMine}
+                            domainStart={domain.start}
+                            domainSpan={span}
+                            size="sm"
+                            onSelect={onSelect}
+                            onResize={onResize}
+                          />
                         </div>
                       </div>
                     );
@@ -161,7 +162,10 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
         <span className="flex items-center gap-1.5">
           <span className="size-3 rounded-full ring-2 ring-foreground" /> = You
         </span>
-        <span>Each colour is a person · click a day for detail · click a bar to edit</span>
+        <span>
+          Each colour is a person · click a day for detail · click a bar to edit · drag either end of
+          your own bar to adjust it in 30-minute steps
+        </span>
       </div>
     </div>
   );
