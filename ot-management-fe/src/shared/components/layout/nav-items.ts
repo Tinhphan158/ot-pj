@@ -9,5 +9,5 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Overtime management', href: '/team-overtime', icon: CalendarRange },
-  { label: 'Hồ sơ', href: '/profile', icon: UserRound },
+  { label: 'Profile', href: '/profile', icon: UserRound },
 ];

@@ -4,10 +4,10 @@ import { useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
 import { cn } from '@/shared/utils/cn';
-import { formatDate } from '@/shared/utils/format';
+import { MONTH_NAMES, formatDate } from '@/shared/utils/format';
 
 // Self-contained so it doesn't depend on the overtime feature layer.
-const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function toStr(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -44,7 +44,7 @@ interface AppDatePickerProps {
 export function AppDatePicker({
   value,
   onChange,
-  placeholder = 'Chọn ngày',
+  placeholder = 'Pick a date',
   className,
   id,
   disabled,
@@ -96,18 +96,18 @@ export function AppDatePicker({
             type="button"
             className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
             onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), month - 1, 1))}
-            aria-label="Tháng trước"
+            aria-label="Previous month"
           >
             <ChevronLeft className="size-4" />
           </button>
           <span className="text-sm font-medium">
-            Tháng {month + 1}, {viewMonth.getFullYear()}
+            {MONTH_NAMES[month]} {viewMonth.getFullYear()}
           </span>
           <button
             type="button"
             className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
             onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), month + 1, 1))}
-            aria-label="Tháng sau"
+            aria-label="Next month"
           >
             <ChevronRight className="size-4" />
           </button>

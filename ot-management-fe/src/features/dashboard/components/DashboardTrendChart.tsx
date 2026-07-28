@@ -18,7 +18,7 @@ function TrendTooltip({ active, payload }: { active?: boolean; payload?: { paylo
     <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md">
       <p className="font-medium text-popover-foreground">{point.label}</p>
       <p className="mt-1 text-muted-foreground">
-        {formatHours(point.hours)} · {point.entries} đơn
+        {formatHours(point.hours)} · {point.entries} entries
       </p>
     </div>
   );
@@ -60,7 +60,7 @@ export function DashboardTrendChart({ title, description, data }: DashboardTrend
           </ResponsiveContainer>
         ) : (
           <div className="flex h-70 items-center justify-center text-sm text-muted-foreground">
-            Không có OT nào trong kỳ này.
+            No overtime in this period.
           </div>
         )}
       </CardContent>

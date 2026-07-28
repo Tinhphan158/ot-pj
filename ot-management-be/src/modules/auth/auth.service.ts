@@ -36,7 +36,7 @@ const ALLOWED_EMAILS = new Set(
     'phamdanh@v-takeuchi.vn',
   ].map((email) => email.toLowerCase()),
 );
-const EMAIL_NOT_ALLOWED_MESSAGE = 'bạn không thuộc teamIT bạn đừng mơ sử dụng web này hehehe';
+const EMAIL_NOT_ALLOWED_MESSAGE = "You're not on the IT team — don't even dream of using this app hehehe";
 /** Namespace signup OTPs so they don't collide with password-reset OTPs. */
 const signupOtpKey = (email: string) => `signup:${email}`;
 
@@ -68,13 +68,13 @@ export class AuthService {
     this.assertAllowedEmail(dto.email);
 
     const existing = await this.userRepository.findByEmail(dto.email);
-    if (existing) ExceptionHelper.throwConflict('Email đã được sử dụng', 'EMAIL_TAKEN');
+    if (existing) ExceptionHelper.throwConflict('Email is already taken', 'EMAIL_TAKEN');
 
     const code = this.otpService.generateCode();
     await this.otpService.store(signupOtpKey(dto.email), code);
     await this.mailService.sendSignupOtp(dto.email, code);
 
-    return { message: 'Mã xác thực đã được gửi tới email của bạn' };
+    return { message: 'A verification code has been sent to your email' };
   }
 
   /** Step 2 of signup: verify the code, then create the account. */
@@ -82,10 +82,10 @@ export class AuthService {
     this.assertAllowedEmail(dto.email);
 
     const valid = await this.otpService.verify(signupOtpKey(dto.email), dto.otp);
-    if (!valid) throw new BadRequestException('Mã xác thực không đúng hoặc đã hết hạn', 'INVALID_OTP');
+    if (!valid) throw new BadRequestException('The verification code is incorrect or has expired', 'INVALID_OTP');
 
     const existing = await this.userRepository.findByEmail(dto.email);
-    if (existing) ExceptionHelper.throwConflict('Email đã được sử dụng', 'EMAIL_TAKEN');
+    if (existing) ExceptionHelper.throwConflict('Email is already taken', 'EMAIL_TAKEN');
 
     const password = await BcryptHelper.hash(dto.password);
     const user = await this.userRepository.create({

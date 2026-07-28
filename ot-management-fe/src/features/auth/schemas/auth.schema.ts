@@ -27,13 +27,13 @@ export const registerSchema = z.object({
     .min(1, 'Email is required')
     .email('Enter a valid email')
     .refine((value) => ALLOWED_SIGNUP_EMAILS.includes(value.trim().toLowerCase()), {
-      message: 'bạn không thuộc teamIT bạn đừng mơ sử dụng web này hehehe',
+      message: "You're not on the IT team — don't even dream of using this app hehehe",
     }),
   password: z.string().min(6, 'Password must be at least 6 characters').max(64),
 });
 
 export const signupOtpSchema = z.object({
-  otp: z.string().length(6, 'Nhập đủ 6 số'),
+  otp: z.string().length(6, 'Enter all 6 digits'),
 });
 
 export const forgotPasswordSchema = z.object({

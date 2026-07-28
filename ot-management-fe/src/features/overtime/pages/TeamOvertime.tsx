@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Loader2, Plus } from 'lucide-react';
 import { AppDatePicker, AppPageContainer, AppPageHeader } from '@/shared/components/custome';
 import { Button } from '@/shared/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
-import { formatDate, formatDateWithWeekday } from '@/shared/utils/format';
+import { MONTH_NAMES, formatDate, formatDateWithWeekday } from '@/shared/utils/format';
 import { useCurrentUser } from '@/features/auth/store/auth.store';
 import { useOvertimeRangeQuery } from '@/features/overtime/hooks/queries/useOvertimesQuery';
 import { useOvertimeActions } from '@/features/overtime/hooks/useOvertimeActions';
@@ -46,10 +46,10 @@ function periodLabel(view: OvertimeView, anchor: Date): string {
     case 'month': {
       const { start, endExclusive, labelMonth } = monthCycle(anchor);
       const end = addDays(endExclusive, -1);
-      return `Tháng ${labelMonth + 1}: ${formatDate(start, 'dd/MM')} – ${formatDate(end, 'dd/MM/yyyy')}`;
+      return `${MONTH_NAMES[labelMonth]}: ${formatDate(start, 'dd/MM')} – ${formatDate(end, 'dd/MM/yyyy')}`;
     }
     case 'year':
-      return `Năm ${anchor.getFullYear()}`;
+      return `Year ${anchor.getFullYear()}`;
   }
 }
 

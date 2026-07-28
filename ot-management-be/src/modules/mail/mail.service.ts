@@ -49,8 +49,8 @@ export class MailService {
   async sendSignupOtp(email: string, otp: string): Promise<void> {
     await this.send(
       email,
-      'Mã xác thực đăng ký OT Management',
-      `Mã xác thực đăng ký tài khoản của bạn là ${otp}. Mã hết hạn sau 5 phút.`,
+      'OT Management signup verification code',
+      `Your signup verification code is ${otp}. It expires in 5 minutes.`,
     );
   }
 }

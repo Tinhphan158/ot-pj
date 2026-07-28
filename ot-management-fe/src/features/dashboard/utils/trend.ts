@@ -1,5 +1,5 @@
 import type { DashboardDailyPoint } from '@/shared/api';
-import { formatDate, weekdayVi } from '@/shared/utils/format';
+import { MONTH_NAMES, formatDate, weekdayName } from '@/shared/utils/format';
 import {
   addDays,
   monthCycle,
@@ -13,12 +13,12 @@ import {
 export type DashboardPeriod = Exclude<OvertimeView, 'day'>;
 
 export const DASHBOARD_PERIODS: { value: DashboardPeriod; label: string }[] = [
-  { value: 'week', label: 'Tuần' },
-  { value: 'month', label: 'Tháng' },
-  { value: 'year', label: 'Năm' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+  { value: 'year', label: 'Year' },
 ];
 
-/** Human label for the period the anchor falls in, e.g. "Tháng 7: 21/06 – 20/07". */
+/** Human label for the period the anchor falls in, e.g. "July: 21/06 – 20/07". */
 export function periodLabel(period: DashboardPeriod, anchor: Date): string {
   switch (period) {
     case 'week': {
@@ -27,10 +27,10 @@ export function periodLabel(period: DashboardPeriod, anchor: Date): string {
     }
     case 'month': {
       const { start, endExclusive, labelMonth } = monthCycle(anchor);
-      return `Tháng ${labelMonth + 1}: ${formatDate(start, 'dd/MM')} – ${formatDate(addDays(endExclusive, -1), 'dd/MM/yyyy')}`;
+      return `${MONTH_NAMES[labelMonth]}: ${formatDate(start, 'dd/MM')} – ${formatDate(addDays(endExclusive, -1), 'dd/MM/yyyy')}`;
     }
     case 'year':
-      return `Năm ${anchor.getFullYear()}`;
+      return `Year ${anchor.getFullYear()}`;
   }
 }
 
@@ -79,7 +79,7 @@ export function buildTrend(
     const date = toDateStr(day);
     const point = byDate.get(date);
     points.push({
-      label: period === 'week' ? `${weekdayVi(day, true)} ${formatDate(day, 'dd/MM')}` : formatDate(day, 'dd/MM'),
+      label: period === 'week' ? `${weekdayName(day, true)} ${formatDate(day, 'dd/MM')}` : formatDate(day, 'dd/MM'),
       hours: point?.hours ?? 0,
       entries: point?.entries ?? 0,
       date,

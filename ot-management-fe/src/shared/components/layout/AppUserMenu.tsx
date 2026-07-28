@@ -45,7 +45,7 @@ export function AppUserMenu({ user }: { user: User }) {
         <DropdownMenuItem asChild>
           <a href="/profile" className="flex items-center gap-2">
             <UserIcon className="size-4" />
-            Hồ sơ
+            Profile
           </a>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       {/* Keeps bg-background as the fallback: the cosmic layer sits at a negative
           z-index, which paints above the canvas background but below all content. */}
       <body className="min-h-screen bg-background font-sans antialiased">

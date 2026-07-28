@@ -21,7 +21,7 @@ interface UserRow {
   email: string;
 }
 
-const MONTH_LABELS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function cellHours(hours: number): string {
   return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`;
@@ -56,7 +56,7 @@ export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: Ov
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
-        Không có OT nào trong năm này.
+        No overtime in this year.
       </div>
     );
   }
@@ -75,14 +75,14 @@ export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: Ov
           <thead>
             <tr>
               <th className="sticky left-0 z-10 min-w-40 border-b bg-card px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                Nhân viên
+                Employee
               </th>
               {MONTH_LABELS.map((label) => (
                 <th key={label} className="min-w-14 border-b px-1 py-2 text-center text-[11px] font-medium text-muted-foreground">
                   {label}
                 </th>
               ))}
-              <th className="border-b bg-card px-3 py-2 text-right text-xs font-medium text-muted-foreground">Tổng</th>
+              <th className="border-b bg-card px-3 py-2 text-right text-xs font-medium text-muted-foreground">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -113,7 +113,7 @@ export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: Ov
                         <button
                           type="button"
                           onClick={() => onSelectMonth(monthIndex)}
-                          title={hours > 0 ? `${row.name} · Tháng ${monthIndex + 1} · ${formatHours(hours)}` : `Tháng ${monthIndex + 1}`}
+                          title={hours > 0 ? `${row.name} · ${label} · ${formatHours(hours)}` : label}
                           className="flex h-8 w-full items-center justify-center rounded text-[11px] font-medium transition-colors hover:ring-1 hover:ring-primary"
                           style={cellStyle(hours)}
                         >
@@ -135,9 +135,9 @@ export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: Ov
       <div className="flex flex-wrap items-center gap-4 border-t px-4 py-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="size-3 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 60%, transparent)' }} />
-          Ô càng đậm càng nhiều giờ
+          Darker cells mean more hours
         </span>
-        <span>Bấm vào ô để xem chi tiết tháng</span>
+        <span>Click a cell to see that month&apos;s detail</span>
       </div>
     </div>
   );

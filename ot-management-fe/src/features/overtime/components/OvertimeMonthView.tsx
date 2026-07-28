@@ -66,7 +66,7 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
-        Không có OT nào trong tháng {labelMonth + 1}/{labelYear}.
+        No overtime in {labelMonth + 1}/{labelYear}.
       </div>
     );
   }
@@ -85,7 +85,7 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
           <thead>
             <tr>
               <th className="sticky left-0 z-10 min-w-40 border-b bg-card px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                Nhân viên
+                Employee
               </th>
               {days.map((day) => {
                 const dow = day.getDay();
@@ -111,7 +111,7 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
                 );
               })}
               <th className="border-b bg-card px-3 py-2 text-right text-xs font-medium text-muted-foreground">
-                Tổng
+                Total
               </th>
             </tr>
           </thead>
@@ -166,9 +166,9 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
       <div className="flex flex-wrap items-center gap-4 border-t px-4 py-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="size-3 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 60%, transparent)' }} />
-          Ô càng đậm càng nhiều giờ
+          Darker cells mean more hours
         </span>
-        <span>Bấm vào ô để xem chi tiết ngày</span>
+        <span>Click a cell to see that day&apos;s detail</span>
       </div>
     </div>
   );

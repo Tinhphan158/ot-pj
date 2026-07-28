@@ -29,10 +29,10 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found', 'USER_NOT_FOUND');
 
     const matches = await BcryptHelper.compare(dto.currentPassword, user.password);
-    if (!matches) throw new BadRequestException('Mật khẩu hiện tại không đúng', 'WRONG_CURRENT_PASSWORD');
+    if (!matches) throw new BadRequestException('Current password is incorrect', 'WRONG_CURRENT_PASSWORD');
 
     const hashed = await BcryptHelper.hash(dto.newPassword);
     await this.userRepository.updatePassword(userId, hashed);
-    return { message: 'Đổi mật khẩu thành công' };
+    return { message: 'Password changed successfully' };
   }
 }

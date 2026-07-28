@@ -10,7 +10,7 @@ import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserA
 interface DashboardTopMembersProps {
   members: DashboardMemberStat[];
   currentUserId?: string;
-  /** How many rows to render before the "và N người khác" footer. */
+  /** How many rows to render before the "and N others" footer. */
   limit?: number;
 }
 
@@ -27,12 +27,12 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
           <Crown className="size-4 text-amber-500" />
           Top OT
         </CardTitle>
-        <CardDescription>Xếp hạng theo tổng số giờ OT trong kỳ.</CardDescription>
+        <CardDescription>Ranked by total OT hours in the period.</CardDescription>
       </CardHeader>
       <CardContent>
         {visible.length === 0 ? (
           <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
-            Chưa có ai đăng ký OT trong kỳ này.
+            Nobody has logged overtime in this period.
           </div>
         ) : (
           <ol className="flex flex-col gap-1">
@@ -80,7 +80,7 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
                         {member.email}
                       </span>
                       <span className="truncate text-xs text-muted-foreground">
-                        {member.entries} đơn · {member.days} ngày
+                        {member.entries} entries · {member.days} days
                       </span>
                     </div>
                   </div>
@@ -95,7 +95,7 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
 
         {members.length > visible.length && (
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            và {members.length - visible.length} người khác
+            and {members.length - visible.length} others
           </p>
         )}
       </CardContent>

@@ -14,9 +14,9 @@ import { DashboardTrendChart } from '@/features/dashboard/components/DashboardTr
 import { DashboardTopMembers } from '@/features/dashboard/components/DashboardTopMembers';
 
 const TREND_COPY: Record<DashboardPeriod, { title: string; description: string }> = {
-  week: { title: 'Giờ OT theo ngày', description: 'Tổng giờ OT của cả công ty từng ngày trong tuần.' },
-  month: { title: 'Giờ OT theo ngày', description: 'Tổng giờ OT từng ngày trong kỳ (21 tháng trước → 20 tháng này).' },
-  year: { title: 'Giờ OT theo tháng', description: 'Tổng giờ OT từng kỳ tháng trong năm.' },
+  week: { title: 'OT hours by day', description: 'Company-wide OT hours for each day of the week.' },
+  month: { title: 'OT hours by day', description: 'OT hours for each day of the cycle (21st of last month → 20th of this month).' },
+  year: { title: 'OT hours by month', description: 'OT hours for each monthly cycle of the year.' },
 };
 
 export default function Dashboard() {
@@ -46,7 +46,7 @@ export default function Dashboard() {
       {query.isLoading || !stats ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-xl border bg-card">
           {query.isError ? (
-            <span className="text-sm text-destructive">Không tải được số liệu thống kê.</span>
+            <span className="text-sm text-destructive">Could not load the statistics.</span>
           ) : (
             <Loader2 className="size-6 animate-spin text-muted-foreground" />
           )}

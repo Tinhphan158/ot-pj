@@ -43,7 +43,7 @@ export function useOvertimeActions() {
   const openEdit = (overtime: Overtime) => {
     // Only the owner may edit/delete their own OT.
     if (overtime.userId !== currentUser?.id) {
-      notify({ type: 'info', title: 'Chỉ chủ đơn mới sửa được', description: 'Đây là đơn OT của người khác.' });
+      notify({ type: 'info', title: 'Only the owner can edit this', description: 'This overtime entry belongs to someone else.' });
       return;
     }
     setEditing(overtime);

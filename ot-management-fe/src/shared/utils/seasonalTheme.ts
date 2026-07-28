@@ -7,9 +7,9 @@ import {
 } from '@/shared/constants/seasonal-theme';
 
 /**
- * Mùng 1 Tết Nguyên Đán (dương lịch) theo múi giờ Việt Nam.
- * Âm lịch không tính được bằng công thức ngắn gọn nên tra bảng; năm nào không có
- * trong bảng thì theme Tết bị bỏ qua và rơi về theme mùa tương ứng.
+ * Gregorian date of Lunar New Year's Day, in the Vietnam time zone. The lunar
+ * calendar has no short formula, hence the lookup table; a year that is missing
+ * simply skips the Tet theme and falls through to the matching season.
  */
 const TET_DATES: Record<number, string> = {
   2024: '2024-02-10',
@@ -26,7 +26,7 @@ const TET_DATES: Record<number, string> = {
   2035: '2035-02-08',
 };
 
-/** Rằm tháng Tám — Tết Trung thu. */
+/** The 15th of the 8th lunar month — Mid-Autumn Festival. */
 const MID_AUTUMN_DATES: Record<number, string> = {
   2024: '2024-09-17',
   2025: '2025-10-06',
@@ -44,7 +44,7 @@ const MID_AUTUMN_DATES: Record<number, string> = {
 
 const LUNAR_TABLES = { tet: TET_DATES, 'mid-autumn': MID_AUTUMN_DATES };
 
-/** Số ngày kể từ epoch, bỏ hoàn toàn phần giờ — so sánh ngày với ngày. */
+/** Whole days since the epoch, dropping the time part so dates compare as dates. */
 function toDayNumber(date: Date): number {
   return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000);
 }
@@ -64,16 +64,16 @@ function matchesPeriod(date: Date, period: SeasonalPeriod): boolean {
     return today >= anchor - period.before && today <= anchor + period.after;
   }
 
-  // So sánh trên thang MMDD nên không phụ thuộc năm.
+  // Compare on an MMDD scale so the match is year-independent.
   const today = (date.getMonth() + 1) * 100 + date.getDate();
   const from = period.from[0] * 100 + period.from[1];
   const to = period.to[0] * 100 + period.to[1];
 
-  // Khoảng vắt qua giao thừa (ví dụ 1/11 → 31/1) thì điều kiện là HOẶC.
+  // A range that wraps past new year (e.g. 1 Nov → 31 Jan) needs OR, not AND.
   return from <= to ? today >= from && today <= to : today >= from || today <= to;
 }
 
-/** Theme khớp ngày `date` — lấy phần tử khớp đầu tiên nên thứ tự mảng là thứ tự ưu tiên. */
+/** Theme matching `date` — first match wins, so array order is priority order. */
 export function resolveSeasonalTheme(date: Date = new Date()): SeasonalTheme {
   const matched = SEASONAL_THEMES.find((theme) => matchesPeriod(date, theme.period));
   if (matched) return matched;
@@ -83,7 +83,7 @@ export function resolveSeasonalTheme(date: Date = new Date()): SeasonalTheme {
   );
 }
 
-/** Như `resolveSeasonalTheme` nhưng tôn trọng `SEASONAL_THEME_OVERRIDE`. */
+/** Like `resolveSeasonalTheme`, but honours `SEASONAL_THEME_OVERRIDE`. */
 export function getSeasonalTheme(date: Date = new Date()): SeasonalTheme {
   if (SEASONAL_THEME_OVERRIDE !== 'auto') {
     const forced = SEASONAL_THEMES.find((theme) => theme.id === SEASONAL_THEME_OVERRIDE);
@@ -92,7 +92,7 @@ export function getSeasonalTheme(date: Date = new Date()): SeasonalTheme {
   return resolveSeasonalTheme(date);
 }
 
-/** Mili giây tới 0h00 hôm sau — để hẹn giờ đổi theme mà không cần tải lại trang. */
+/** Milliseconds until the next local midnight, to reschedule the theme without a reload. */
 export function msUntilNextMidnight(from: Date = new Date()): number {
   const next = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1);
   return next.getTime() - from.getTime();

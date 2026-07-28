@@ -19,7 +19,7 @@ export function DashboardHeader({ period, anchor, onPeriodChange, onShift, onTod
     <>
       <AppPageHeader
         title="Dashboard"
-        description="Tổng quan OT của cả công ty — số thành viên, tổng giờ và bảng xếp hạng OT theo tuần, tháng hoặc năm."
+        description="Company-wide OT overview — member count, total hours and the OT leaderboard by week, month or year."
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -35,14 +35,14 @@ export function DashboardHeader({ period, anchor, onPeriodChange, onShift, onTod
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={onToday}>
-            Hôm nay
+            Today
           </Button>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" className="size-8" onClick={() => onShift(-1)} aria-label="Kỳ trước">
+            <Button variant="outline" size="icon" className="size-8" onClick={() => onShift(-1)} aria-label="Previous period">
               <ChevronLeft className="size-4" />
             </Button>
             <span className="min-w-[220px] text-center text-sm font-medium">{periodLabel(period, anchor)}</span>
-            <Button variant="outline" size="icon" className="size-8" onClick={() => onShift(1)} aria-label="Kỳ sau">
+            <Button variant="outline" size="icon" className="size-8" onClick={() => onShift(1)} aria-label="Next period">
               <ChevronRight className="size-4" />
             </Button>
           </div>

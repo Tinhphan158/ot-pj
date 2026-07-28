@@ -14,9 +14,9 @@ interface OvertimeEvent {
 }
 
 const VERBS = {
-  created: 'đã tạo',
-  updated: 'đã cập nhật',
-  deleted: 'đã xóa',
+  created: 'created',
+  updated: 'updated',
+  deleted: 'deleted',
 } as const;
 
 /**
@@ -43,8 +43,8 @@ export function useOvertimeRealtime() {
       const dateLabel = formatDate(event.overtime?.date, 'dd/MM/yyyy');
       notify({
         type: 'info',
-        title: 'Cập nhật OT',
-        description: `${event.actor?.name ?? 'Ai đó'} ${VERBS[type]} OT ngày ${dateLabel}`,
+        title: 'Overtime updated',
+        description: `${event.actor?.name ?? 'Someone'} ${VERBS[type]} overtime on ${dateLabel}`,
       });
     };
 

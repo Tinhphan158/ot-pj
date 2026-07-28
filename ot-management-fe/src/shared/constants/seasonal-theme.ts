@@ -1,13 +1,13 @@
 /**
- * Bảng màu nền theo mùa / theo dịp lễ.
+ * Backdrop palettes, one per season or holiday.
  *
- * Mỗi theme khai báo một `period` (khoảng ngày). Hàm `resolveSeasonalTheme()`
- * trong `@/shared/utils/seasonalTheme` so ngày hiện tại với các khoảng này và
- * trả về theme khớp ĐẦU TIÊN — nên thứ tự trong `SEASONAL_THEMES` chính là thứ
- * tự ưu tiên: các dịp lễ đứng trước, 4 mùa đứng cuối làm fallback.
+ * Every theme declares a `period` (a date range). `resolveSeasonalTheme()` in
+ * `@/shared/utils/seasonalTheme` compares today against those ranges and returns
+ * the FIRST match — so the order of `SEASONAL_THEMES` is the priority order:
+ * holidays come first, the four seasons sit at the end as the fallback.
  *
- * Muốn thêm một dịp mới: thêm một phần tử vào mảng, đặt phía trên nhóm 4 mùa.
- * Muốn xem thử một theme bất kỳ: đổi `SEASONAL_THEME_OVERRIDE`.
+ * To add an occasion: append an entry above the four-season group.
+ * To preview any theme: change `SEASONAL_THEME_OVERRIDE`.
  */
 
 export type SeasonalThemeId =
@@ -24,18 +24,18 @@ export type SeasonalThemeId =
   | 'autumn'
   | 'winter';
 
-/** Hình dạng hạt rơi/bay trong nền. */
+/** Shape of the particles drifting through the backdrop. */
 export type ParticleShape = 'round' | 'glow' | 'petal' | 'leaf' | 'confetti' | 'sparkle';
 
-/** Kiểu chuyển động của hạt. */
+/** How the particles move. */
 export type ParticleMotion = 'fall' | 'spin-fall' | 'rise' | 'drift';
 
 /**
- * Khoảng thời gian áp dụng theme.
- * - `fixed`: ngày dương lịch cố định, dạng [tháng, ngày]. Cho phép vắt qua năm
- *   (ví dụ mùa đông 1/11 → 31/1).
- * - `lunar`: neo vào một ngày âm lịch (tra bảng), mở rộng `before` ngày trước và
- *   `after` ngày sau.
+ * The window in which a theme applies.
+ * - `fixed`: fixed Gregorian dates as [month, day]. May wrap past new year
+ *   (winter, for instance, runs 1 Nov → 31 Jan).
+ * - `lunar`: anchored to a lunar date (from a lookup table), widened by `before`
+ *   days ahead of it and `after` days behind.
  */
 export type SeasonalPeriod =
   | { kind: 'fixed'; from: readonly [number, number]; to: readonly [number, number] }
@@ -45,22 +45,22 @@ export interface SeasonalParticles {
   shape: ParticleShape;
   motion: ParticleMotion;
   count: number;
-  /** Khoảng kích thước (px): [min, max). */
+  /** Size range in px: [min, max). */
   size: readonly [number, number];
-  /** Tỉ lệ cao/rộng — cánh hoa và lá dẹt hơn hình tròn. */
+  /** Height-to-width ratio — petals and leaves are flatter than round particles. */
   aspect?: number;
-  /** Khoảng thời lượng một vòng animation (giây): [min, max). */
+  /** Duration range for one animation cycle, in seconds: [min, max). */
   duration: readonly [number, number];
   colors: { light: readonly string[]; dark: readonly string[] };
 }
 
-/** Quầng sáng lớn cố định: mặt trời mùa hè, trăng rằm trung thu... */
+/** A large fixed glow: the summer sun, the mid-autumn moon, and so on. */
 export interface SeasonalOrb {
   light: string;
   dark: string;
   left: string;
   top: string;
-  /** Đường kính, nên dùng đơn vị vw để co giãn theo màn hình. */
+  /** Diameter — prefer vw units so it scales with the viewport. */
   size: string;
 }
 
@@ -68,19 +68,19 @@ export interface SeasonalTheme {
   id: SeasonalThemeId;
   label: string;
   period: SeasonalPeriod;
-  /** Giá trị CSS `background` cho lớp nền, tách riêng light/dark. */
+  /** CSS `background` value for the sky layer, split per light/dark. */
   sky: { light: string; dark: string };
-  /** 3 vệt mây màu trôi chậm phía sau nội dung. */
+  /** Three tinted clouds drifting slowly behind the content. */
   nebulas: readonly [string, string, string];
   particles: SeasonalParticles;
   orb?: SeasonalOrb;
-  /** Trường sao — chỉ hiện ở dark mode (nền sáng sẽ trông như bụi bẩn). */
+  /** Starfield — dark mode only; on a light page it reads as dust. */
   stars: boolean;
-  /** Sao băng — cũng chỉ hiện ở dark mode. */
+  /** Meteors — dark mode only as well. */
   meteors: boolean;
 }
 
-/** 8/3 và 20/10 dùng chung một bộ màu, khai báo một lần rồi tái sử dụng. */
+/** 8 Mar and 20 Oct share one palette, so declare it once and reuse it. */
 const FLORAL_STYLE = {
   sky: {
     light: `radial-gradient(ellipse 80% 60% at 15% -10%, rgba(236, 72, 153, 0.2), transparent 60%),
@@ -108,11 +108,11 @@ const FLORAL_STYLE = {
 } as const satisfies Omit<SeasonalTheme, 'id' | 'label' | 'period'>;
 
 export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
-  // ----- Dịp lễ (ưu tiên cao hơn 4 mùa) -----------------------------------
+  // ----- Holidays (take priority over the four seasons) --------------------
   {
     id: 'tet',
-    label: 'Tết Nguyên Đán',
-    // Từ 28 tháng Chạp đến hết mùng 6.
+    label: 'Lunar New Year (Tet)',
+    // From the 28th of the 12th lunar month through the 6th day of the new year.
     period: { kind: 'lunar', anchor: 'tet', before: 3, after: 6 },
     sky: {
       light: `radial-gradient(ellipse 80% 60% at 15% -10%, rgba(239, 68, 68, 0.2), transparent 60%),
@@ -147,7 +147,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
   },
   {
     id: 'new-year',
-    label: 'Tết Dương lịch',
+    label: "New Year's Day",
     period: { kind: 'fixed', from: [12, 30], to: [1, 2] },
     sky: {
       light: `radial-gradient(ellipse 80% 60% at 20% -10%, rgba(168, 85, 247, 0.2), transparent 60%),
@@ -175,7 +175,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
   },
   {
     id: 'christmas',
-    label: 'Giáng sinh (Noel)',
+    label: 'Christmas',
     period: { kind: 'fixed', from: [12, 18], to: [12, 26] },
     sky: {
       light: `radial-gradient(ellipse 80% 60% at 15% -10%, rgba(220, 38, 38, 0.16), transparent 60%),
@@ -202,7 +202,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
   },
   {
     id: 'reunification',
-    label: 'Giải phóng miền Nam 30/4 & Quốc tế Lao động 1/5',
+    label: 'Reunification Day (30 Apr) & Labour Day (1 May)',
     period: { kind: 'fixed', from: [4, 29], to: [5, 2] },
     sky: {
       light: `radial-gradient(ellipse 80% 60% at 18% -10%, rgba(220, 38, 38, 0.2), transparent 60%),
@@ -229,7 +229,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
   },
   {
     id: 'national-day',
-    label: 'Quốc khánh 2/9',
+    label: 'National Day (2 Sep)',
     period: { kind: 'fixed', from: [9, 1], to: [9, 3] },
     sky: {
       light: `radial-gradient(ellipse 75% 55% at 50% -14%, rgba(250, 204, 21, 0.26), transparent 62%),
@@ -263,7 +263,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
   },
   {
     id: 'mid-autumn',
-    label: 'Tết Trung thu',
+    label: 'Mid-Autumn Festival',
     period: { kind: 'lunar', anchor: 'mid-autumn', before: 3, after: 2 },
     sky: {
       light: `radial-gradient(ellipse 75% 55% at 80% -12%, rgba(251, 191, 36, 0.28), transparent 62%),
@@ -281,7 +281,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
       top: '-6%',
       size: '26vw',
     },
-    // Đèn lồng thả trôi lên.
+    // Lanterns floating upward.
     particles: {
       shape: 'glow',
       motion: 'rise',
@@ -298,21 +298,21 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
   },
   {
     id: 'womens-day',
-    label: 'Quốc tế Phụ nữ 8/3',
+    label: "International Women's Day (8 Mar)",
     period: { kind: 'fixed', from: [3, 7], to: [3, 9] },
     ...FLORAL_STYLE,
   },
   {
     id: 'vn-womens-day',
-    label: 'Phụ nữ Việt Nam 20/10',
+    label: "Vietnamese Women's Day (20 Oct)",
     period: { kind: 'fixed', from: [10, 19], to: [10, 21] },
     ...FLORAL_STYLE,
   },
 
-  // ----- 4 mùa (fallback, phủ kín 365 ngày) --------------------------------
+  // ----- The four seasons (fallback, covering all 365 days) ----------------
   {
     id: 'spring',
-    label: 'Mùa Xuân',
+    label: 'Spring',
     period: { kind: 'fixed', from: [2, 1], to: [4, 30] },
     sky: {
       light: `radial-gradient(ellipse 80% 60% at 15% -10%, rgba(244, 114, 182, 0.18), transparent 60%),
@@ -340,7 +340,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
   },
   {
     id: 'summer',
-    label: 'Mùa Hạ',
+    label: 'Summer',
     period: { kind: 'fixed', from: [5, 1], to: [7, 31] },
     sky: {
       light: `radial-gradient(ellipse 70% 55% at 82% -12%, rgba(253, 224, 71, 0.3), transparent 62%),
@@ -352,7 +352,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
         linear-gradient(180deg, #04121a 0%, #06182a 55%, #020a12 100%)`,
     },
     nebulas: ['rgba(56,189,248,0.5)', 'rgba(45,212,191,0.45)', 'rgba(253,224,71,0.35)'],
-    // Mặt trời chếch góc phải trên.
+    // Sun offset toward the top-right corner.
     orb: {
       light: 'rgba(253, 224, 71, 0.55)',
       dark: 'rgba(251, 146, 60, 0.42)',
@@ -360,7 +360,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
       top: '-12%',
       size: '34vw',
     },
-    // Đom đóm / bụi nắng bay lơ lửng.
+    // Fireflies / sunlit motes hanging in the air.
     particles: {
       shape: 'glow',
       motion: 'drift',
@@ -377,7 +377,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
   },
   {
     id: 'autumn',
-    label: 'Mùa Thu',
+    label: 'Autumn',
     period: { kind: 'fixed', from: [8, 1], to: [10, 31] },
     sky: {
       light: `radial-gradient(ellipse 80% 60% at 15% -10%, rgba(251, 146, 60, 0.2), transparent 60%),
@@ -405,7 +405,7 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
   },
   {
     id: 'winter',
-    label: 'Mùa Đông',
+    label: 'Winter',
     period: { kind: 'fixed', from: [11, 1], to: [1, 31] },
     sky: {
       light: `radial-gradient(ellipse 80% 60% at 15% -10%, rgba(147, 197, 253, 0.22), transparent 60%),
@@ -434,10 +434,11 @@ export const SEASONAL_THEMES: readonly SeasonalTheme[] = [
 ];
 
 /**
- * `'auto'` = chọn theme theo ngày hiện tại (hành vi mong muốn).
- * Đặt thẳng một id để ép cứng — tiện khi cần xem trước một dịp chưa tới.
+ * `'auto'` picks the theme from today's date, which is the intended behaviour.
+ * Set a concrete id to pin one — handy for previewing an occasion that has not
+ * arrived yet.
  */
 export const SEASONAL_THEME_OVERRIDE: SeasonalThemeId | 'auto' = 'auto';
 
-/** Dùng khi không khoảng nào khớp (về lý thuyết không xảy ra vì 4 mùa phủ kín năm). */
+/** Used when no range matches — in theory unreachable, since the seasons cover the year. */
 export const FALLBACK_SEASONAL_THEME_ID: SeasonalThemeId = 'winter';

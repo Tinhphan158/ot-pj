@@ -39,20 +39,20 @@ export function OvertimeCrowdedDayDialog({
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
               <Users className="size-4.5" />
             </span>
-            Ngày này đã khá đông
+            This day is already busy
           </AlertDialogTitle>
           <AlertDialogDescription>
             {day && (
               <>
-                <span className="font-medium text-foreground">{formatDateWithWeekday(day.date)}</span> hiện đã có{' '}
-                <span className="font-medium text-foreground">{day.count} đơn OT</span>. Nếu tạo thêm thì sẽ quá đông.
-                Bạn có chắc chắn muốn tạo thêm không?
+                <span className="font-medium text-foreground">{formatDateWithWeekday(day.date)}</span> already has{' '}
+                <span className="font-medium text-foreground">{day.count} overtime entries</span>. Adding one more will make it crowded.
+                Are you sure you want to add another?
               </>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSubmitting}>Không</AlertDialogCancel>
+          <AlertDialogCancel disabled={isSubmitting}>No</AlertDialogCancel>
           <AlertDialogAction
             onClick={(event) => {
               // Keep the dialog mounted until the mutation settles.
@@ -62,7 +62,7 @@ export function OvertimeCrowdedDayDialog({
             disabled={isSubmitting}
           >
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-            Có, vẫn tạo
+            Yes, add it
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

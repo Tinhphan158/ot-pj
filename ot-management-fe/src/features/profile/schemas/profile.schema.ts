@@ -1,23 +1,23 @@
 import { z } from 'zod';
 
 export const updateProfileSchema = z.object({
-  name: z.string().min(1, 'Vui lòng nhập họ tên').max(120),
+  name: z.string().min(1, 'Please enter your full name').max(120),
   avatar: z
     .string()
     .max(1000)
-    .url('Đường dẫn ảnh không hợp lệ')
+    .url('Invalid image URL')
     .optional()
     .or(z.literal('')),
 });
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Nhập mật khẩu hiện tại'),
-    newPassword: z.string().min(6, 'Mật khẩu mới tối thiểu 6 ký tự').max(64),
-    confirmPassword: z.string().min(1, 'Xác nhận mật khẩu mới'),
+    currentPassword: z.string().min(1, 'Enter your current password'),
+    newPassword: z.string().min(6, 'New password must be at least 6 characters').max(64),
+    confirmPassword: z.string().min(1, 'Confirm your new password'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Mật khẩu xác nhận không khớp',
+    message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
 

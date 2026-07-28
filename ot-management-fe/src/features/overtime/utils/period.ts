@@ -26,7 +26,7 @@ export function addDays(date: Date, days: number): Date {
 
 /**
  * The "OT month" cycle a date belongs to. A cycle labelled month M runs from the
- * 21st of the previous month to the 20th of month M — e.g. "Tháng 7" = 21/06–20/07.
+ * 21st of the previous month to the 20th of month M — e.g. "July" = 21/06–20/07.
  * Returns the [start, endExclusive) range and the 0-based label month / year.
  */
 export function monthCycle(anchor: Date): {
@@ -79,7 +79,7 @@ export function getRange(view: OvertimeView, anchor: Date): { from: string; to: 
       break;
     }
     case 'year':
-      // Year Y in OT cycles spans Tháng 1 (21/12 of Y-1) through Tháng 12 (…20/12 of Y).
+      // Year Y in OT cycles spans January (21/12 of Y-1) through December (…20/12 of Y).
       start = new Date(y - 1, 11, 21);
       end = new Date(y, 11, 21);
       break;

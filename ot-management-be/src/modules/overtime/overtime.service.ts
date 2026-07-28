@@ -44,7 +44,7 @@ export class OvertimeService {
     );
     if (clash) {
       throw new ConflictException(
-        `Khung giờ bị trùng với một đơn OT khác của bạn (${clash.startTime}–${clash.endTime})`,
+        `This time range overlaps another of your overtime entries (${clash.startTime}–${clash.endTime})`,
         'OVERTIME_OVERLAP',
       );
     }
@@ -52,7 +52,7 @@ export class OvertimeService {
 
   private assertOwner(ownerId: string, actor: JwtPayload): void {
     if (ownerId !== actor.id) {
-      throw new ForbiddenException('Bạn không có quyền sửa/xóa đơn OT của người khác', 'NOT_OVERTIME_OWNER');
+      throw new ForbiddenException('You cannot edit or delete overtime entries that belong to someone else', 'NOT_OVERTIME_OWNER');
     }
   }
 

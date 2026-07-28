@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { cn } from '@/shared/utils/cn';
-import { formatHours, weekdayVi } from '@/shared/utils/format';
+import { formatHours, weekdayName } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { userColor } from '@/features/overtime/utils/userColor';
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
@@ -87,17 +87,17 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
                 onClick={() => onSelectDay(dateStr)}
                 className="mb-1.5 flex items-center gap-2 rounded px-1 text-sm hover:text-primary"
               >
-                <span className={cn('font-semibold', isToday && 'text-primary')}>{weekdayVi(day)}</span>
+                <span className={cn('font-semibold', isToday && 'text-primary')}>{weekdayName(day)}</span>
                 <span className="text-muted-foreground">
                   {String(day.getDate()).padStart(2, '0')}/{String(day.getMonth() + 1).padStart(2, '0')}
                 </span>
                 {records.length > 0 && (
-                  <span className="text-xs text-muted-foreground">· {records.length} người</span>
+                  <span className="text-xs text-muted-foreground">· {records.length} people</span>
                 )}
               </button>
 
               {records.length === 0 ? (
-                <p className="pl-80 text-xs text-muted-foreground">Không có OT</p>
+                <p className="pl-80 text-xs text-muted-foreground">No overtime</p>
               ) : (
                 <div className="flex flex-col gap-1">
                   {records.map((row) => {
@@ -161,7 +161,7 @@ export function OvertimeWeekView({ overtimes, weekStart, currentUserId, onSelect
         <span className="flex items-center gap-1.5">
           <span className="size-3 rounded-full ring-2 ring-foreground" /> = You
         </span>
-        <span>Mỗi màu là một người · bấm ngày để xem chi tiết · bấm thanh OT để sửa</span>
+        <span>Each colour is a person · click a day for detail · click a bar to edit</span>
       </div>
     </div>
   );

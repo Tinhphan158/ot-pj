@@ -44,9 +44,9 @@ export default function ProfileManagement() {
   const onSaveProfile = async (values: UpdateProfileValues) => {
     try {
       await updateProfile.mutateAsync({ name: values.name, avatar: values.avatar || undefined });
-      notify({ type: 'success', title: 'Đã cập nhật hồ sơ' });
+      notify({ type: 'success', title: 'Profile updated' });
     } catch (error) {
-      notify({ type: 'error', title: 'Không thể cập nhật hồ sơ', description: getErrorMessage(error) });
+      notify({ type: 'error', title: 'Could not update profile', description: getErrorMessage(error) });
     }
   };
 
@@ -56,22 +56,22 @@ export default function ProfileManagement() {
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
       });
-      notify({ type: 'success', title: 'Đã đổi mật khẩu' });
+      notify({ type: 'success', title: 'Password changed' });
       passwordForm.reset();
     } catch (error) {
-      notify({ type: 'error', title: 'Không thể đổi mật khẩu', description: getErrorMessage(error) });
+      notify({ type: 'error', title: 'Could not change password', description: getErrorMessage(error) });
     }
   };
 
   return (
     <AppPageContainer className="max-w-3xl">
-      <AppPageHeader title="Hồ sơ" description="Cập nhật thông tin cá nhân và mật khẩu của bạn." />
+      <AppPageHeader title="Profile" description="Update your personal details and password." />
 
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Thông tin cá nhân</CardTitle>
-            <CardDescription>Họ tên và ảnh đại diện hiển thị trong ứng dụng.</CardDescription>
+            <CardTitle>Personal information</CardTitle>
+            <CardDescription>The name and avatar shown across the app.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="mb-5 flex items-center gap-4">
@@ -89,18 +89,18 @@ export default function ProfileManagement() {
 
             <Form {...profileForm}>
               <form onSubmit={profileForm.handleSubmit(onSaveProfile)} className="space-y-4">
-                <AppFormInput control={profileForm.control} name="name" label="Họ và tên" placeholder="Nguyễn Văn A" />
+                <AppFormInput control={profileForm.control} name="name" label="Full name" placeholder="Nguyen Van A" />
                 <AppFormInput
                   control={profileForm.control}
                   name="avatar"
-                  label="Ảnh đại diện (URL)"
+                  label="Avatar (URL)"
                   placeholder="https://…"
-                  description="Dán link ảnh. Để trống nếu muốn dùng chữ viết tắt."
+                  description="Paste an image link. Leave empty to fall back to initials."
                 />
                 <div className="flex justify-end">
                   <Button type="submit" disabled={updateProfile.isPending}>
                     {updateProfile.isPending && <Loader2 className="size-4 animate-spin" />}
-                    Lưu thay đổi
+                    Save changes
                   </Button>
                 </div>
               </form>
@@ -110,8 +110,8 @@ export default function ProfileManagement() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Đổi mật khẩu</CardTitle>
-            <CardDescription>Nhập mật khẩu hiện tại và mật khẩu mới.</CardDescription>
+            <CardTitle>Change password</CardTitle>
+            <CardDescription>Enter your current password and the new one.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...passwordForm}>
@@ -119,25 +119,25 @@ export default function ProfileManagement() {
                 <AppFormPasswordInput
                   control={passwordForm.control}
                   name="currentPassword"
-                  label="Mật khẩu hiện tại"
+                  label="Current password"
                   placeholder="••••••••"
                 />
                 <AppFormPasswordInput
                   control={passwordForm.control}
                   name="newPassword"
-                  label="Mật khẩu mới"
-                  placeholder="Tối thiểu 6 ký tự"
+                  label="New password"
+                  placeholder="At least 6 characters"
                 />
                 <AppFormPasswordInput
                   control={passwordForm.control}
                   name="confirmPassword"
-                  label="Xác nhận mật khẩu mới"
-                  placeholder="Nhập lại mật khẩu mới"
+                  label="Confirm new password"
+                  placeholder="Re-enter the new password"
                 />
                 <div className="flex justify-end">
                   <Button type="submit" disabled={changePassword.isPending}>
                     {changePassword.isPending && <Loader2 className="size-4 animate-spin" />}
-                    Đổi mật khẩu
+                    Change password
                   </Button>
                 </div>
               </form>

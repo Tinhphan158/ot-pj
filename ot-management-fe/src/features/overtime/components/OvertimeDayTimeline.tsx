@@ -129,7 +129,7 @@ export function OvertimeDayTimeline({ overtimes, currentUserId, onSelect }: Over
         <span className="flex items-center gap-1.5">
           <span className="size-3 rounded-full ring-2 ring-foreground" /> = You
         </span>
-        <span>Mỗi màu là một người · bấm vào thanh OT để sửa</span>
+        <span>Each colour is a person · click a bar to edit</span>
       </div>
     </div>
   );
