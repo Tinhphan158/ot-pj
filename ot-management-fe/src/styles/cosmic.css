@@ -1,11 +1,16 @@
 /* ---------------------------------------------------------------------------
-   Animated cosmic backdrop: nebula wash, starfield, meteors and falling snow.
+   Animated seasonal backdrop: sky wash, drifting nebulas, an optional glowing
+   orb (sun / moon), a starfield, meteors and a particle layer.
 
    Everything here is decorative and lives behind the app (pointer-events: none,
    negative z-index). Only `transform` and `opacity` are animated so the work
    stays on the compositor.
 
-   Light theme deliberately shows just the aurora wash and pale snow — a
+   The palette is NOT hardcoded here — it arrives as inline custom properties
+   from the active theme in `src/shared/constants/seasonal-theme.ts`. This file
+   only owns geometry, motion and the light/dark split.
+
+   Light theme deliberately shows just the sky wash and pale particles — a
    starfield on a white page reads as dust, and dark text needs the light
    backdrop. The starfield and meteors fade in under `.dark`.
 --------------------------------------------------------------------------- */
@@ -17,6 +22,18 @@
   overflow: hidden;
   pointer-events: none;
   contain: strict;
+  /* The theme is resolved after hydration, so the sky arrives one frame late.
+     Fading it in reads as intentional rather than as a flash. */
+  animation: cosmic-appear 0.6s ease both;
+}
+
+@keyframes cosmic-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ---- Sky wash ----------------------------------------------------------- */
@@ -24,18 +41,24 @@
 .cosmic-sky {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 15% -10%, rgba(99, 102, 241, 0.16), transparent 60%),
-    radial-gradient(ellipse 70% 50% at 90% 5%, rgba(217, 70, 239, 0.1), transparent 60%),
-    linear-gradient(180deg, #f5f7ff 0%, #fbfcfe 55%, #ffffff 100%);
+  background: var(--cosmic-sky);
 }
 
 .dark .cosmic-sky {
-  background:
-    radial-gradient(ellipse 90% 60% at 20% -15%, rgba(56, 78, 183, 0.5), transparent 60%),
-    radial-gradient(ellipse 70% 55% at 88% 0%, rgba(126, 34, 206, 0.38), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 50% 110%, rgba(14, 116, 144, 0.28), transparent 60%),
-    linear-gradient(180deg, #060a18 0%, #0a1026 55%, #04060f 100%);
+  background: var(--cosmic-sky-dark);
+}
+
+/* ---- Orb (summer sun, mid-autumn moon, Tết lantern glow) ----------------- */
+
+.cosmic-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(50px);
+  background: radial-gradient(circle, var(--orb-color), transparent 70%);
+}
+
+.dark .cosmic-orb {
+  background: radial-gradient(circle, var(--orb-color-dark), transparent 70%);
 }
 
 /* ---- Drifting nebula clouds --------------------------------------------- */
@@ -138,31 +161,85 @@
   }
 }
 
-/* ---- Snow ---------------------------------------------------------------- */
+/* ---- Particles ----------------------------------------------------------- */
 
-.cosmic-flake {
+/* One element type for snow, petals, leaves, confetti, fireflies and sparks.
+   `--p` indirects the theme colour so the dark override below flips every
+   shape at once, including the ones that paint with box-shadow. */
+.cosmic-particle {
+  --p: var(--p-color);
   position: absolute;
   top: 0;
+  background-color: var(--p);
+  opacity: 0;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.dark .cosmic-particle {
+  --p: var(--p-color-dark);
+}
+
+.cosmic-particle[data-shape='round'] {
   border-radius: 9999px;
-  background: rgba(99, 102, 241, 0.35);
-  animation: cosmic-fall linear infinite;
 }
 
-.dark .cosmic-flake {
-  background: rgba(255, 255, 255, 0.85);
+/* Fireflies and floating lanterns: a soft halo carries most of the light. */
+.cosmic-particle[data-shape='glow'] {
+  border-radius: 9999px;
+  box-shadow: 0 0 10px 2px var(--p);
 }
 
-/* Horizontal sway is baked into the same keyframes so each flake stays a
-   single animated element. */
+.cosmic-particle[data-shape='petal'] {
+  border-radius: 70% 5% 70% 5%;
+}
+
+.cosmic-particle[data-shape='leaf'] {
+  border-radius: 0 65% 0 65%;
+}
+
+.cosmic-particle[data-shape='confetti'] {
+  border-radius: 1px;
+}
+
+.cosmic-particle[data-shape='sparkle'] {
+  clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+}
+
+/* Rising motions start below the fold, so they anchor to the bottom instead. */
+.cosmic-particle[data-motion='rise'],
+.cosmic-particle[data-motion='drift'] {
+  top: auto;
+}
+
+.cosmic-particle[data-motion='fall'] {
+  animation-name: cosmic-fall;
+}
+
+.cosmic-particle[data-motion='spin-fall'] {
+  animation-name: cosmic-spin-fall;
+}
+
+.cosmic-particle[data-motion='rise'] {
+  animation-name: cosmic-rise;
+}
+
+.cosmic-particle[data-motion='drift'] {
+  animation-name: cosmic-drift-mote;
+}
+
+/* Horizontal sway is baked into the same keyframes so each particle stays a
+   single animated element.
+
+   Peak opacity is per-particle; an animated `opacity` would otherwise beat any
+   inline value and flatten every particle to the same brightness. */
 @keyframes cosmic-fall {
   0% {
     opacity: 0;
     transform: translate3d(0, -10vh, 0);
   }
-  /* Peak opacity is per-flake; an animated `opacity` would otherwise beat any
-     inline value and flatten every flake to the same brightness. */
   8% {
-    opacity: var(--flake-opacity, 0.8);
+    opacity: var(--p-opacity, 0.8);
   }
   25% {
     transform: translate3d(14px, 20vh, 0);
@@ -174,7 +251,7 @@
     transform: translate3d(14px, 80vh, 0);
   }
   92% {
-    opacity: var(--flake-opacity, 0.8);
+    opacity: var(--p-opacity, 0.8);
   }
   100% {
     opacity: 0;
@@ -182,14 +259,87 @@
   }
 }
 
+@keyframes cosmic-spin-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+  }
+  8% {
+    opacity: var(--p-opacity, 0.8);
+  }
+  25% {
+    transform: translate3d(3vw, 20vh, 0) rotate(140deg);
+  }
+  50% {
+    transform: translate3d(-3vw, 50vh, 0) rotate(260deg);
+  }
+  75% {
+    transform: translate3d(3vw, 80vh, 0) rotate(420deg);
+  }
+  92% {
+    opacity: var(--p-opacity, 0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 110vh, 0) rotate(560deg);
+  }
+}
+
+@keyframes cosmic-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8vh, 0) scale(0.7);
+  }
+  12% {
+    opacity: var(--p-opacity, 0.8);
+  }
+  50% {
+    transform: translate3d(2vw, -45vh, 0) scale(1);
+  }
+  88% {
+    opacity: var(--p-opacity, 0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-2vw, -105vh, 0) scale(0.85);
+  }
+}
+
+/* Fireflies wander a short distance and pulse rather than crossing the screen. */
+@keyframes cosmic-drift-mote {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.6);
+  }
+  15% {
+    opacity: var(--p-opacity, 0.8);
+  }
+  35% {
+    transform: translate3d(3vw, -12vh, 0) scale(1);
+  }
+  60% {
+    opacity: calc(var(--p-opacity, 0.8) * 0.3);
+    transform: translate3d(-2vw, -24vh, 0) scale(0.8);
+  }
+  80% {
+    opacity: var(--p-opacity, 0.8);
+    transform: translate3d(2vw, -34vh, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -48vh, 0) scale(0.6);
+  }
+}
+
 /* ---- Motion preferences --------------------------------------------------- */
 
 /* Keep the painted sky, drop everything that moves. */
 @media (prefers-reduced-motion: reduce) {
+  .cosmic-root,
   .cosmic-nebula,
   .cosmic-star,
   .cosmic-meteor,
-  .cosmic-flake {
+  .cosmic-particle {
     animation: none;
   }
 
@@ -198,7 +348,7 @@
   }
 
   .cosmic-meteor,
-  .cosmic-flake {
+  .cosmic-particle {
     display: none;
   }
 }
