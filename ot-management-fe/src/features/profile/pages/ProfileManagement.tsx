@@ -3,7 +3,13 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { AppPageContainer, AppPageHeader, AppFormInput, AppFormPasswordInput } from '@/shared/components/custome';
+import {
+  AppPageContainer,
+  AppPageHeader,
+  AppFormInput,
+  AppFormPasswordInput,
+  AvatarViewer,
+} from '@/shared/components/custome';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
 import { Form } from '@/shared/components/ui/form';
@@ -75,12 +81,14 @@ export default function ProfileManagement() {
           </CardHeader>
           <CardContent>
             <div className="mb-5 flex items-center gap-4">
-              <Avatar className="size-16 border-2" style={{ borderColor }}>
-                {avatarPreview ? <AvatarImage src={avatarPreview} alt={namePreview} /> : null}
-                <AvatarFallback className="bg-primary/10 text-lg font-medium text-primary">
-                  {getInitials(namePreview || user?.name || '?')}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarViewer src={avatarPreview} name={namePreview || user?.name || 'Avatar'}>
+                <Avatar className="size-16 border-2" style={{ borderColor }}>
+                  {avatarPreview ? <AvatarImage src={avatarPreview} alt={namePreview} /> : null}
+                  <AvatarFallback className="bg-primary/10 text-lg font-medium text-primary">
+                    {getInitials(namePreview || user?.name || '?')}
+                  </AvatarFallback>
+                </Avatar>
+              </AvatarViewer>
               <div className="min-w-0">
                 <p className="truncate font-medium">{namePreview || user?.name}</p>
                 <p className="truncate text-sm text-muted-foreground">{user?.email}</p>

@@ -23,10 +23,6 @@ interface UserRow {
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-function cellHours(hours: number): string {
-  return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`;
-}
-
 export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: OvertimeYearViewProps) {
   const { rows, cellMap, maxHours } = useMemo(() => {
     const userMap = new Map<string, UserRow>();
@@ -114,10 +110,10 @@ export function OvertimeYearView({ overtimes, currentUserId, onSelectMonth }: Ov
                           type="button"
                           onClick={() => onSelectMonth(monthIndex)}
                           title={hours > 0 ? `${row.name} · ${label} · ${formatHours(hours)}` : label}
-                          className="flex h-8 w-full items-center justify-center rounded text-[11px] font-medium transition-colors hover:ring-1 hover:ring-primary"
+                          className="flex h-8 w-full items-center justify-center rounded text-[11px] font-medium tabular-nums transition-colors hover:ring-1 hover:ring-primary"
                           style={cellStyle(hours)}
                         >
-                          {hours > 0 ? cellHours(hours) : ''}
+                          {hours > 0 ? formatHours(hours) : ''}
                         </button>
                       </td>
                     );

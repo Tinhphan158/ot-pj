@@ -22,11 +22,6 @@ interface UserRow {
   email: string;
 }
 
-/** Compact hours label for a matrix cell, e.g. "2h", "2.5h". */
-function cellHours(hours: number): string {
-  return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`;
-}
-
 export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSelectDay }: OvertimeMonthViewProps) {
   const { labelMonth, labelYear } = monthCycle(monthAnchor);
   // Columns span the OT cycle (21st of prev month → 20th of the label month).
@@ -95,7 +90,7 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
                   <th
                     key={day.getDate()}
                     className={cn(
-                      'w-9 border-b px-0 py-2 text-center text-[11px] font-medium',
+                      'w-12 border-b px-0 py-2 text-center text-[11px] font-medium',
                       weekend ? 'text-muted-foreground/60' : 'text-muted-foreground',
                     )}
                   >
@@ -145,10 +140,10 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
                           type="button"
                           onClick={() => onSelectDay(dateStr)}
                           title={hours > 0 ? `${row.name} · ${dateStr} · ${formatHours(hours)}` : dateStr}
-                          className="flex h-7 w-full items-center justify-center rounded text-[10px] font-medium transition-colors hover:ring-1 hover:ring-primary"
+                          className="flex h-7 w-full items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors hover:ring-1 hover:ring-primary"
                           style={cellStyle(hours)}
                         >
-                          {hours > 0 ? cellHours(hours) : ''}
+                          {hours > 0 ? formatHours(hours) : ''}
                         </button>
                       </td>
                     );
