@@ -33,6 +33,7 @@ export function AppMainLayout({ children }: { children: ReactNode }) {
         <div className="mt-6 flex-1">
           <AppSidebarNav items={navItems} />
         </div>
+        <p className="px-3 text-xs text-muted-foreground">Release on 21/07/2026 by TinhPhan</p>
         <p className="px-3 text-xs text-muted-foreground">v0.1.0</p>
       </aside>
 
