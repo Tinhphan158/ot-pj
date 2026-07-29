@@ -164,7 +164,7 @@ export function OvertimeWeekView({
         </span>
         <span>
           Each colour is a person · click a day for detail · click a bar to edit · drag either end of
-          your own bar to adjust it in 30-minute steps
+          your own bar to adjust it in 5-minute steps
         </span>
       </div>
     </div>

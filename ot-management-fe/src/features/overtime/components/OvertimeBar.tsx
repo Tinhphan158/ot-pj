@@ -6,8 +6,15 @@ import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { timeToMinutes } from '@/features/overtime/utils/period';
 
-/** Drag granularity. Edges land on :00 / :30 only. */
-const STEP_MINUTES = 30;
+/**
+ * Drag granularity. Kept small on purpose: the axis usually spans an evening
+ * (~5 hours) across the full row width, so a coarse step costs tens of pixels
+ * and the bar reads as stuck until the pointer clears half of one.
+ */
+const STEP_MINUTES = 5;
+
+/** Floor on the range itself, so a bar cannot be dragged down to one step. */
+const MIN_DURATION_MINUTES = 30;
 
 /**
  * End of day. The API rejects 24:00, so the last grid point is written back as
@@ -131,10 +138,17 @@ export function OvertimeBar({
 
     const next =
       drag.edge === 'start'
-        ? { start: clamp(snap(drag.start + deltaMinutes), 0, drag.end - STEP_MINUTES), end: drag.end }
+        ? {
+            start: clamp(snap(drag.start + deltaMinutes), 0, drag.end - MIN_DURATION_MINUTES),
+            end: drag.end,
+          }
         : {
             start: drag.start,
-            end: clamp(snap(drag.end + deltaMinutes), drag.start + STEP_MINUTES, DAY_END_MINUTES),
+            end: clamp(
+              snap(drag.end + deltaMinutes),
+              drag.start + MIN_DURATION_MINUTES,
+              DAY_END_MINUTES,
+            ),
           };
 
     drag.next = next;
@@ -163,7 +177,8 @@ export function OvertimeBar({
   };
 
   const handleClass = cn(
-    'absolute inset-y-0 z-10 w-2 touch-none cursor-ew-resize',
+    // Wider than the grip it draws, so the edge is easy to grab on the first try.
+    'absolute inset-y-0 z-10 w-3 touch-none cursor-ew-resize',
     'after:absolute after:inset-y-1 after:left-1/2 after:w-0.5 after:-translate-x-1/2 after:rounded-full',
     'after:bg-white/0 hover:after:bg-white/70',
   );

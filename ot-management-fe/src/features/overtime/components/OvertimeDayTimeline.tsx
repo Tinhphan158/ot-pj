@@ -126,7 +126,7 @@ export function OvertimeDayTimeline({
         </span>
         <span>
           Each colour is a person · click a bar to edit · drag either end of your own bar to adjust it
-          in 30-minute steps
+          in 5-minute steps
         </span>
       </div>
     </div>
