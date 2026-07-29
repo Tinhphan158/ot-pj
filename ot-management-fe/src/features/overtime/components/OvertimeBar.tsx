@@ -22,6 +22,17 @@ const MIN_DURATION_MINUTES = 30;
  */
 const DAY_END_MINUTES = 24 * 60;
 
+/**
+ * Holding the pointer this close to a track edge keeps extending the range on its
+ * own. Past the edge the axis stretches and the dragged edge rides the border, so
+ * pointer travel alone would cap the reach at whatever room is left before the
+ * screen ends — a couple of pixels on a maximised window.
+ */
+const EDGE_ZONE_PX = 24;
+
+/** One step per tick while parked in the edge zone: ~28 minutes a second. */
+const AUTO_EXTEND_INTERVAL_MS = 180;
+
 export interface OvertimeBarProps {
   overtime: Overtime;
   color: string;
@@ -37,6 +48,11 @@ export interface OvertimeBarProps {
    * failed so the bar snaps back to the stored times.
    */
   onResize?: (overtime: Overtime, startTime: string, endTime: string) => Promise<boolean>;
+  /**
+   * Reports the range being dragged (null once it is over), so the track can
+   * widen its axis to keep the dragged edge on screen.
+   */
+  onDraftChange?: (draft: { start: number; end: number } | null) => void;
 }
 
 function minutesToTime(minutes: number): string {
@@ -53,10 +69,36 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 interface DragState {
   edge: 'start' | 'end';
   originX: number;
+  trackLeft: number;
   trackWidth: number;
+  /**
+   * Axis span as it was when the drag began. The live span grows while the axis
+   * follows the drag, and converting pixels with a growing span would feed the
+   * growth back into the value — a runaway. Frozen here, a pixel is worth the
+   * same number of minutes for the whole gesture.
+   */
+  span: number;
   start: number;
   end: number;
+  /** Minutes owed to pointer travel, from the last move. */
+  pointerMinutes: number;
+  /** Minutes owed to parking in an edge zone; survives further pointer moves. */
+  autoMinutes: number;
   next: { start: number; end: number };
+}
+
+/** The range `drag` describes once its edge is moved by `offset` minutes. */
+function offsetRange(drag: DragState, offset: number): { start: number; end: number } {
+  if (drag.edge === 'start') {
+    return {
+      start: clamp(snap(drag.start + offset), 0, drag.end - MIN_DURATION_MINUTES),
+      end: drag.end,
+    };
+  }
+  return {
+    start: drag.start,
+    end: clamp(snap(drag.end + offset), drag.start + MIN_DURATION_MINUTES, DAY_END_MINUTES),
+  };
 }
 
 /**
@@ -78,16 +120,30 @@ export function OvertimeBar({
   size = 'md',
   onSelect,
   onResize,
+  onDraftChange,
 }: OvertimeBarProps) {
   const barRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
+  const autoExtendRef = useRef<{ direction: -1 | 1; timer: number } | null>(null);
   const [draft, setDraft] = useState<{ start: number; end: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Held in a ref so publishing a draft never re-runs the effects below when the
+  // track passes a fresh callback.
+  const onDraftChangeRef = useRef(onDraftChange);
+  onDraftChangeRef.current = onDraftChange;
+
+  /** The draft drives this bar's own preview and the track's axis together. */
+  const publishDraft = (next: { start: number; end: number } | null) => {
+    setDraft(next);
+    onDraftChangeRef.current?.(next);
+  };
 
   // New times arriving from the server mean the draft has served its purpose.
   // A failed save leaves the props untouched, so `commit` clears it explicitly.
   useEffect(() => {
     setDraft(null);
+    onDraftChangeRef.current?.(null);
   }, [overtime.startTime, overtime.endTime]);
 
   const resizable = Boolean(onResize) && isMine;
@@ -95,9 +151,8 @@ export function OvertimeBar({
   const startMinutes = draft?.start ?? timeToMinutes(overtime.startTime);
   const endMinutes = draft?.end ?? timeToMinutes(overtime.endTime);
 
-  // Clamped to the track: a drag may run past the axis, which only spans the
-  // stored entries. Letting it overflow would paint the bar outside its row
-  // until the save widens the axis.
+  // The axis widens to cover a drag, so the clamp is a backstop for the frame
+  // between a move and the track's re-render rather than a normal state.
   const percent = (minutes: number) => clamp(((minutes - domainStart) / domainSpan) * 100, 0, 100);
   const left = percent(startMinutes);
   const width = Math.max(percent(endMinutes) - left, 2);
@@ -117,47 +172,85 @@ export function OvertimeBar({
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
 
+    const rect = track.getBoundingClientRect();
     const start = timeToMinutes(overtime.startTime);
     const end = timeToMinutes(overtime.endTime);
     dragRef.current = {
       edge,
       originX: event.clientX,
-      trackWidth: track.getBoundingClientRect().width,
+      trackLeft: rect.left,
+      trackWidth: rect.width,
+      span: domainSpan,
       start,
       end,
+      pointerMinutes: 0,
+      autoMinutes: 0,
       next: { start, end },
     };
-    setDraft({ start, end });
+    publishDraft({ start, end });
+  };
+
+  /** Push the dragged edge to whatever the pointer and the edge zone add up to. */
+  const commitOffset = (drag: DragState) => {
+    const next = offsetRange(drag, drag.pointerMinutes + drag.autoMinutes);
+    if (next.start === drag.next.start && next.end === drag.next.end) return;
+    drag.next = next;
+    publishDraft(next);
+  };
+
+  const stopAutoExtend = () => {
+    if (autoExtendRef.current === null) return;
+    window.clearInterval(autoExtendRef.current.timer);
+    autoExtendRef.current = null;
+  };
+
+  /**
+   * Keep stepping the edge while the pointer sits in an edge zone. Beyond the
+   * axis this is the only way forward: the edge is pinned to the border there, so
+   * there is no room left to travel into.
+   */
+  const startAutoExtend = (direction: -1 | 1) => {
+    if (autoExtendRef.current?.direction === direction) return;
+    stopAutoExtend();
+    const timer = window.setInterval(() => {
+      const drag = dragRef.current;
+      if (!drag) return stopAutoExtend();
+
+      // Bank the step only if it moved the edge. Once the range hits midnight the
+      // ticks would otherwise pile up unseen, and dragging back would have to undo
+      // all of them before the bar responded again.
+      const candidate = drag.autoMinutes + direction * STEP_MINUTES;
+      const next = offsetRange(drag, drag.pointerMinutes + candidate);
+      if (next.start === drag.next.start && next.end === drag.next.end) return;
+
+      drag.autoMinutes = candidate;
+      drag.next = next;
+      publishDraft(next);
+    }, AUTO_EXTEND_INTERVAL_MS);
+    autoExtendRef.current = { direction, timer };
   };
 
   const onDragMove = (event: ReactPointerEvent<HTMLSpanElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.trackWidth === 0) return;
 
-    const deltaMinutes = ((event.clientX - drag.originX) / drag.trackWidth) * domainSpan;
+    drag.pointerMinutes = ((event.clientX - drag.originX) / drag.trackWidth) * drag.span;
+    commitOffset(drag);
 
-    const next =
-      drag.edge === 'start'
-        ? {
-            start: clamp(snap(drag.start + deltaMinutes), 0, drag.end - MIN_DURATION_MINUTES),
-            end: drag.end,
-          }
-        : {
-            start: drag.start,
-            end: clamp(
-              snap(drag.end + deltaMinutes),
-              drag.start + MIN_DURATION_MINUTES,
-              DAY_END_MINUTES,
-            ),
-          };
-
-    drag.next = next;
-    setDraft(next);
+    const fromLeft = event.clientX - drag.trackLeft;
+    const fromRight = drag.trackLeft + drag.trackWidth - event.clientX;
+    if (fromRight <= EDGE_ZONE_PX) startAutoExtend(1);
+    else if (fromLeft <= EDGE_ZONE_PX) startAutoExtend(-1);
+    else stopAutoExtend();
   };
+
+  // A drag can outlive the bar if a refetch reorders the list mid-gesture.
+  useEffect(() => stopAutoExtend, []);
 
   const endDrag = async (event: ReactPointerEvent<HTMLSpanElement>) => {
     const drag = dragRef.current;
     dragRef.current = null;
+    stopAutoExtend();
     if (!drag) return;
 
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -166,14 +259,16 @@ export function OvertimeBar({
 
     const { next } = drag;
     if (next.start === drag.start && next.end === drag.end) {
-      setDraft(null);
+      publishDraft(null);
       return;
     }
 
+    // The draft outlives the pointer on purpose: dropping it before the new times
+    // land would shrink the axis back and bounce the bar for one render.
     setIsSaving(true);
     const saved = await onResize?.(overtime, minutesToTime(next.start), minutesToTime(next.end));
     setIsSaving(false);
-    if (!saved) setDraft(null);
+    if (!saved) publishDraft(null);
   };
 
   const handleClass = cn(

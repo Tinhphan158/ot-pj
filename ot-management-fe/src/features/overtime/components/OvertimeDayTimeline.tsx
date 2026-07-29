@@ -1,10 +1,12 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Overtime } from '@/shared/api';
 import { userColor } from '@/features/overtime/utils/userColor';
 import { OvertimeBar, type OvertimeBarProps } from '@/features/overtime/components/OvertimeBar';
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
+import { timeToMinutes } from '@/features/overtime/utils/period';
+import { buildTimeDomain } from '@/features/overtime/utils/timeDomain';
 
 interface OvertimeDayTimelineProps {
   overtimes: Overtime[];
@@ -13,41 +15,27 @@ interface OvertimeDayTimelineProps {
   onResize?: OvertimeBarProps['onResize'];
 }
 
-function toMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + (m || 0);
-}
-
 export function OvertimeDayTimeline({
   overtimes,
   currentUserId,
   onSelect,
   onResize,
 }: OvertimeDayTimelineProps) {
+  // Range of the bar being dragged, if any. It widens the axis so a drag can run
+  // past the latest stored entry instead of stalling at the border.
+  const [draft, setDraft] = useState<{ start: number; end: number } | null>(null);
+
   const rows = useMemo(() => {
     return [...overtimes].sort((a, b) => {
       const aMine = a.userId === currentUserId ? 0 : 1;
       const bMine = b.userId === currentUserId ? 0 : 1;
       if (aMine !== bMine) return aMine - bMine;
-      return toMinutes(a.startTime) - toMinutes(b.startTime);
+      return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
     });
   }, [overtimes, currentUserId]);
 
-  const domain = useMemo(() => {
-    if (rows.length === 0) return { start: 17 * 60, end: 22 * 60 };
-    const starts = rows.map((r) => toMinutes(r.startTime));
-    const ends = rows.map((r) => toMinutes(r.endTime));
-    const min = Math.floor(Math.min(...starts) / 60) * 60;
-    const max = Math.max(Math.ceil(Math.max(...ends) / 60) * 60, min + 60);
-    return { start: min, end: max };
-  }, [rows]);
-
-  const span = domain.end - domain.start;
-  const hourTicks = useMemo(() => {
-    const ticks: number[] = [];
-    for (let m = domain.start; m <= domain.end; m += 60) ticks.push(m);
-    return ticks;
-  }, [domain]);
+  const domain = useMemo(() => buildTimeDomain(rows, draft), [rows, draft]);
+  const { span, hourTicks } = domain;
 
   const percent = (minutes: number) => ((minutes - domain.start) / span) * 100;
   const formatTick = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:00`;
@@ -113,6 +101,7 @@ export function OvertimeDayTimeline({
                   domainSpan={span}
                   onSelect={onSelect}
                   onResize={onResize}
+                  onDraftChange={setDraft}
                 />
               </div>
             </div>
@@ -126,7 +115,7 @@ export function OvertimeDayTimeline({
         </span>
         <span>
           Each colour is a person · click a bar to edit · drag either end of your own bar to adjust it
-          in 5-minute steps
+          in 5-minute steps · hold at the edge of the row to stretch the axis further
         </span>
       </div>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { cn } from '@/shared/utils/cn';
 import { weekdayName } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
@@ -8,6 +8,7 @@ import { userColor } from '@/features/overtime/utils/userColor';
 import { OvertimeBar, type OvertimeBarProps } from '@/features/overtime/components/OvertimeBar';
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 import { addDays, isSameDay, timeToMinutes, toDateStr } from '@/features/overtime/utils/period';
+import { buildTimeDomain } from '@/features/overtime/utils/timeDomain';
 
 interface OvertimeWeekViewProps {
   overtimes: Overtime[];
@@ -28,21 +29,12 @@ export function OvertimeWeekView({
 }: OvertimeWeekViewProps) {
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
-  const domain = useMemo(() => {
-    if (overtimes.length === 0) return { start: 17 * 60, end: 22 * 60 };
-    const starts = overtimes.map((o) => timeToMinutes(o.startTime));
-    const ends = overtimes.map((o) => timeToMinutes(o.endTime));
-    const min = Math.floor(Math.min(...starts) / 60) * 60;
-    const max = Math.max(Math.ceil(Math.max(...ends) / 60) * 60, min + 60);
-    return { start: min, end: max };
-  }, [overtimes]);
+  // Range of the bar being dragged, if any. The whole week shares one axis, so a
+  // drag past the latest entry widens every row at once.
+  const [draft, setDraft] = useState<{ start: number; end: number } | null>(null);
 
-  const span = domain.end - domain.start;
-  const hourTicks = useMemo(() => {
-    const ticks: number[] = [];
-    for (let m = domain.start; m <= domain.end; m += 60) ticks.push(m);
-    return ticks;
-  }, [domain]);
+  const domain = useMemo(() => buildTimeDomain(overtimes, draft), [overtimes, draft]);
+  const { span, hourTicks } = domain;
 
   const percent = (minutes: number) => ((minutes - domain.start) / span) * 100;
 
@@ -146,6 +138,7 @@ export function OvertimeWeekView({
                             size="sm"
                             onSelect={onSelect}
                             onResize={onResize}
+                            onDraftChange={setDraft}
                           />
                         </div>
                       </div>
@@ -164,7 +157,8 @@ export function OvertimeWeekView({
         </span>
         <span>
           Each colour is a person · click a day for detail · click a bar to edit · drag either end of
-          your own bar to adjust it in 5-minute steps
+          your own bar to adjust it in 5-minute steps · hold at the edge of the row to stretch the
+          axis further
         </span>
       </div>
     </div>
