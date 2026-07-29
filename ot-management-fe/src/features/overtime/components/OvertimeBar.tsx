@@ -5,33 +5,17 @@ import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { timeToMinutes } from '@/features/overtime/utils/period';
+import { OT_WINDOW_END_MINUTES, OT_WINDOW_START_MINUTES } from '@/features/overtime/utils/timeDomain';
 
 /**
- * Drag granularity. Kept small on purpose: the axis usually spans an evening
- * (~5 hours) across the full row width, so a coarse step costs tens of pixels
- * and the bar reads as stuck until the pointer clears half of one.
+ * Drag granularity. Kept small on purpose: the axis spans a five-hour evening
+ * across the full row width, so a coarse step costs tens of pixels and the bar
+ * reads as stuck until the pointer clears half of one.
  */
 const STEP_MINUTES = 5;
 
 /** Floor on the range itself, so a bar cannot be dragged down to one step. */
 const MIN_DURATION_MINUTES = 30;
-
-/**
- * End of day. The API rejects 24:00, so the last grid point is written back as
- * 23:59 — which is also how full-evening entries already look in the data.
- */
-const DAY_END_MINUTES = 24 * 60;
-
-/**
- * Holding the pointer this close to a track edge keeps extending the range on its
- * own. Past the edge the axis stretches and the dragged edge rides the border, so
- * pointer travel alone would cap the reach at whatever room is left before the
- * screen ends — a couple of pixels on a maximised window.
- */
-const EDGE_ZONE_PX = 24;
-
-/** One step per tick while parked in the edge zone: ~28 minutes a second. */
-const AUTO_EXTEND_INTERVAL_MS = 180;
 
 export interface OvertimeBarProps {
   overtime: Overtime;
@@ -48,16 +32,9 @@ export interface OvertimeBarProps {
    * failed so the bar snaps back to the stored times.
    */
   onResize?: (overtime: Overtime, startTime: string, endTime: string) => Promise<boolean>;
-  /**
-   * Reports the range being dragged (null once it is over), so the track can
-   * widen its axis to keep the dragged edge on screen.
-   */
-  onDraftChange?: (draft: { start: number; end: number } | null) => void;
 }
 
 function minutesToTime(minutes: number): string {
-  // The grid's top point maps onto the latest time the API accepts.
-  if (minutes >= DAY_END_MINUTES) return '23:59';
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -69,35 +46,32 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 interface DragState {
   edge: 'start' | 'end';
   originX: number;
-  trackLeft: number;
   trackWidth: number;
-  /**
-   * Axis span as it was when the drag began. The live span grows while the axis
-   * follows the drag, and converting pixels with a growing span would feed the
-   * growth back into the value — a runaway. Frozen here, a pixel is worth the
-   * same number of minutes for the whole gesture.
-   */
-  span: number;
   start: number;
   end: number;
-  /** Minutes owed to pointer travel, from the last move. */
-  pointerMinutes: number;
-  /** Minutes owed to parking in an edge zone; survives further pointer moves. */
-  autoMinutes: number;
   next: { start: number; end: number };
 }
 
-/** The range `drag` describes once its edge is moved by `offset` minutes. */
+/**
+ * The range `drag` describes once its edge is moved by `offset` minutes, held
+ * inside the allowed evening window. Entries stored outside it — from before the
+ * rule, or seeded — keep their other edge, so a drag narrows them towards the
+ * window instead of refusing to move.
+ */
 function offsetRange(drag: DragState, offset: number): { start: number; end: number } {
   if (drag.edge === 'start') {
+    // The window bound wins over the minimum duration, so an entry shorter than
+    // one duration cannot be dragged out of the window to satisfy it.
+    const latest = Math.max(OT_WINDOW_START_MINUTES, drag.end - MIN_DURATION_MINUTES);
     return {
-      start: clamp(snap(drag.start + offset), 0, drag.end - MIN_DURATION_MINUTES),
+      start: clamp(snap(drag.start + offset), OT_WINDOW_START_MINUTES, latest),
       end: drag.end,
     };
   }
+  const earliest = Math.min(OT_WINDOW_END_MINUTES, drag.start + MIN_DURATION_MINUTES);
   return {
     start: drag.start,
-    end: clamp(snap(drag.end + offset), drag.start + MIN_DURATION_MINUTES, DAY_END_MINUTES),
+    end: clamp(snap(drag.end + offset), earliest, OT_WINDOW_END_MINUTES),
   };
 }
 
@@ -120,48 +94,39 @@ export function OvertimeBar({
   size = 'md',
   onSelect,
   onResize,
-  onDraftChange,
 }: OvertimeBarProps) {
   const barRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
-  const autoExtendRef = useRef<{ direction: -1 | 1; timer: number } | null>(null);
   const [draft, setDraft] = useState<{ start: number; end: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Held in a ref so publishing a draft never re-runs the effects below when the
-  // track passes a fresh callback.
-  const onDraftChangeRef = useRef(onDraftChange);
-  onDraftChangeRef.current = onDraftChange;
-
-  /** The draft drives this bar's own preview and the track's axis together. */
-  const publishDraft = (next: { start: number; end: number } | null) => {
-    setDraft(next);
-    onDraftChangeRef.current?.(next);
-  };
 
   // New times arriving from the server mean the draft has served its purpose.
   // A failed save leaves the props untouched, so `commit` clears it explicitly.
   useEffect(() => {
     setDraft(null);
-    onDraftChangeRef.current?.(null);
   }, [overtime.startTime, overtime.endTime]);
 
-  const resizable = Boolean(onResize) && isMine;
+  const storedStart = timeToMinutes(overtime.startTime);
+  const storedEnd = timeToMinutes(overtime.endTime);
 
-  const startMinutes = draft?.start ?? timeToMinutes(overtime.startTime);
-  const endMinutes = draft?.end ?? timeToMinutes(overtime.endTime);
+  // Entries stored outside the allowed window predate the rule (or came from the
+  // seed). Dragging one edge could never make them legal, so they are read-only
+  // here and have to be corrected in the drawer.
+  const withinWindow = storedStart >= OT_WINDOW_START_MINUTES && storedEnd <= OT_WINDOW_END_MINUTES;
+  const resizable = Boolean(onResize) && isMine && withinWindow;
 
-  // The axis widens to cover a drag, so the clamp is a backstop for the frame
-  // between a move and the track's re-render rather than a normal state.
+  const startMinutes = draft?.start ?? storedStart;
+  const endMinutes = draft?.end ?? storedEnd;
+
+  // The axis is the allowed window, so anything stored outside it is clipped to
+  // the border rather than painted past the end of its row.
   const percent = (minutes: number) => clamp(((minutes - domainStart) / domainSpan) * 100, 0, 100);
   const left = percent(startMinutes);
   const width = Math.max(percent(endMinutes) - left, 2);
 
   const startLabel = minutesToTime(startMinutes);
   const endLabel = minutesToTime(endMinutes);
-  // Mirror what the server will store, so the preview does not read 7h for a
-  // range that is about to be saved as 17:00–23:59.
-  const hours = draft ? (Math.min(endMinutes, DAY_END_MINUTES - 1) - startMinutes) / 60 : overtime.hours;
+  const hours = draft ? (endMinutes - startMinutes) / 60 : overtime.hours;
 
   const beginDrag = (event: ReactPointerEvent<HTMLSpanElement>, edge: 'start' | 'end') => {
     const track = barRef.current?.parentElement;
@@ -172,85 +137,32 @@ export function OvertimeBar({
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
 
-    const rect = track.getBoundingClientRect();
-    const start = timeToMinutes(overtime.startTime);
-    const end = timeToMinutes(overtime.endTime);
     dragRef.current = {
       edge,
       originX: event.clientX,
-      trackLeft: rect.left,
-      trackWidth: rect.width,
-      span: domainSpan,
-      start,
-      end,
-      pointerMinutes: 0,
-      autoMinutes: 0,
-      next: { start, end },
+      trackWidth: track.getBoundingClientRect().width,
+      start: storedStart,
+      end: storedEnd,
+      next: { start: storedStart, end: storedEnd },
     };
-    publishDraft({ start, end });
-  };
-
-  /** Push the dragged edge to whatever the pointer and the edge zone add up to. */
-  const commitOffset = (drag: DragState) => {
-    const next = offsetRange(drag, drag.pointerMinutes + drag.autoMinutes);
-    if (next.start === drag.next.start && next.end === drag.next.end) return;
-    drag.next = next;
-    publishDraft(next);
-  };
-
-  const stopAutoExtend = () => {
-    if (autoExtendRef.current === null) return;
-    window.clearInterval(autoExtendRef.current.timer);
-    autoExtendRef.current = null;
-  };
-
-  /**
-   * Keep stepping the edge while the pointer sits in an edge zone. Beyond the
-   * axis this is the only way forward: the edge is pinned to the border there, so
-   * there is no room left to travel into.
-   */
-  const startAutoExtend = (direction: -1 | 1) => {
-    if (autoExtendRef.current?.direction === direction) return;
-    stopAutoExtend();
-    const timer = window.setInterval(() => {
-      const drag = dragRef.current;
-      if (!drag) return stopAutoExtend();
-
-      // Bank the step only if it moved the edge. Once the range hits midnight the
-      // ticks would otherwise pile up unseen, and dragging back would have to undo
-      // all of them before the bar responded again.
-      const candidate = drag.autoMinutes + direction * STEP_MINUTES;
-      const next = offsetRange(drag, drag.pointerMinutes + candidate);
-      if (next.start === drag.next.start && next.end === drag.next.end) return;
-
-      drag.autoMinutes = candidate;
-      drag.next = next;
-      publishDraft(next);
-    }, AUTO_EXTEND_INTERVAL_MS);
-    autoExtendRef.current = { direction, timer };
+    setDraft({ start: storedStart, end: storedEnd });
   };
 
   const onDragMove = (event: ReactPointerEvent<HTMLSpanElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.trackWidth === 0) return;
 
-    drag.pointerMinutes = ((event.clientX - drag.originX) / drag.trackWidth) * drag.span;
-    commitOffset(drag);
+    const offset = ((event.clientX - drag.originX) / drag.trackWidth) * domainSpan;
+    const next = offsetRange(drag, offset);
+    if (next.start === drag.next.start && next.end === drag.next.end) return;
 
-    const fromLeft = event.clientX - drag.trackLeft;
-    const fromRight = drag.trackLeft + drag.trackWidth - event.clientX;
-    if (fromRight <= EDGE_ZONE_PX) startAutoExtend(1);
-    else if (fromLeft <= EDGE_ZONE_PX) startAutoExtend(-1);
-    else stopAutoExtend();
+    drag.next = next;
+    setDraft(next);
   };
-
-  // A drag can outlive the bar if a refetch reorders the list mid-gesture.
-  useEffect(() => stopAutoExtend, []);
 
   const endDrag = async (event: ReactPointerEvent<HTMLSpanElement>) => {
     const drag = dragRef.current;
     dragRef.current = null;
-    stopAutoExtend();
     if (!drag) return;
 
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -259,16 +171,16 @@ export function OvertimeBar({
 
     const { next } = drag;
     if (next.start === drag.start && next.end === drag.end) {
-      publishDraft(null);
+      setDraft(null);
       return;
     }
 
-    // The draft outlives the pointer on purpose: dropping it before the new times
-    // land would shrink the axis back and bounce the bar for one render.
+    // The draft is held through the save so the bar stays where it was dropped
+    // instead of bouncing back for the round trip.
     setIsSaving(true);
     const saved = await onResize?.(overtime, minutesToTime(next.start), minutesToTime(next.end));
     setIsSaving(false);
-    if (!saved) publishDraft(null);
+    if (!saved) setDraft(null);
   };
 
   const handleClass = cn(

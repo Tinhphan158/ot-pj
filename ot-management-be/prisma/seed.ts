@@ -62,8 +62,8 @@ async function main() {
       for (let i = 0; i < entries; i++) {
         const day = 3 + i * 6 + monthsAgo;
         const startTime = '18:00';
-        const endHour = 20 + (i % 3);
-        const endTime = `${endHour}:30`;
+        // Overtime is only allowed until 22:00, so the latest end here is 21:30.
+        const endTime = `${20 + (i % 2)}:30`;
         await prisma.overtime.create({
           data: {
             userId: user.id,

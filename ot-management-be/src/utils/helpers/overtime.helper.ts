@@ -22,6 +22,31 @@ function toMinutes(time: string): number {
 }
 
 /**
+ * Overtime is only allowed in the evening window below. Keep in step with the
+ * client, which draws its timelines on exactly this range.
+ */
+export const OVERTIME_WINDOW_START = '17:00';
+export const OVERTIME_WINDOW_END = '22:00';
+
+/**
+ * Why the range is not a legal overtime window, or null when it is. Both ends
+ * must sit inside the window and the range must move forwards — an overnight
+ * range cannot fit, so the rollover the other helpers allow is rejected here.
+ */
+export function overtimeWindowViolation(startTime: string, endTime: string): string | null {
+  const start = toMinutes(startTime);
+  const end = toMinutes(endTime);
+  const windowStart = toMinutes(OVERTIME_WINDOW_START);
+  const windowEnd = toMinutes(OVERTIME_WINDOW_END);
+
+  if (end <= start) return 'endTime must be later than startTime';
+  if (start < windowStart || end > windowEnd) {
+    return `Overtime must fall between ${OVERTIME_WINDOW_START} and ${OVERTIME_WINDOW_END}`;
+  }
+  return null;
+}
+
+/**
  * Whether two time ranges on the same day overlap. Touching boundaries do NOT
  * overlap (17:00–19:00 and 19:00–20:00 are fine). Overnight ranges roll over.
  */

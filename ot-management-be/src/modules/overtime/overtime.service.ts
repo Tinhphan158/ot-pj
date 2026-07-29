@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { computeOvertimeHours, overtimeRangesOverlap } from '@/utils';
-import { ConflictException, ForbiddenException, NotFoundException } from '@/common';
+import { computeOvertimeHours, overtimeRangesOverlap, overtimeWindowViolation } from '@/utils';
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@/common';
 import type { JwtPayload } from '@/common';
 import { OvertimeRepository } from './overtime.repository';
 import { OvertimeMapper } from './overtime.mapper';
@@ -50,6 +50,12 @@ export class OvertimeService {
     }
   }
 
+  /** Reject a range that falls outside the hours overtime may be registered in. */
+  private assertWithinWindow(startTime: string, endTime: string): void {
+    const violation = overtimeWindowViolation(startTime, endTime);
+    if (violation) throw new BadRequestException(violation, 'OVERTIME_OUTSIDE_WINDOW');
+  }
+
   private assertOwner(ownerId: string, actor: JwtPayload): void {
     if (ownerId !== actor.id) {
       throw new ForbiddenException('You cannot edit or delete overtime entries that belong to someone else', 'NOT_OVERTIME_OWNER');
@@ -58,6 +64,7 @@ export class OvertimeService {
 
   async create(actor: JwtPayload, dto: CreateOvertimeDto): Promise<OvertimeResponseDto> {
     const date = new Date(dto.date);
+    this.assertWithinWindow(dto.startTime, dto.endTime);
     await this.assertNoOverlap(actor.id, date, dto.startTime, dto.endTime);
 
     const hours = computeOvertimeHours(dto.startTime, dto.endTime);
@@ -81,6 +88,10 @@ export class OvertimeService {
     const endTime = dto.endTime ?? current.endTime;
     const timesChanged = dto.startTime !== undefined || dto.endTime !== undefined;
     const date = dto.date !== undefined ? new Date(dto.date) : current.date;
+
+    // Only checked when the hours move: an entry stored outside the window before
+    // the rule existed can still be shifted to another date.
+    if (timesChanged) this.assertWithinWindow(startTime, endTime);
 
     if (timesChanged || dto.date !== undefined) {
       await this.assertNoOverlap(current.userId, date, startTime, endTime, id);
