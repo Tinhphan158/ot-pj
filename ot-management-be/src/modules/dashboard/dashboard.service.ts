@@ -60,20 +60,29 @@ export class DashboardService {
       : [];
     const memberById = new Map(members.map((member) => [member.id, member]));
 
-    const topMembers: DashboardMemberStatDto[] = [...byMemberElapsed.entries()]
-      .map(([userId, stats]) => {
+    // Ranked on hours worked, so upcoming overtime never buys a place — but it is
+    // reported alongside, which keeps members whose overtime is still ahead of
+    // them on the board with an empty progress bar instead of dropping them.
+    const topMembers: DashboardMemberStatDto[] = [...byMember.entries()]
+      .map(([userId, total]) => {
         const member = memberById.get(userId);
+        const worked = byMemberElapsed.get(userId);
         return {
           userId,
           name: member?.name ?? 'Unknown',
           email: member?.email ?? '',
           avatar: member?.avatar ?? null,
-          hours: roundHours(stats.hours),
-          entries: stats.entries,
-          days: stats.days,
+          hours: roundHours(worked?.hours ?? 0),
+          entries: worked?.entries ?? 0,
+          days: worked?.days ?? 0,
+          totalHours: roundHours(total.hours),
+          totalEntries: total.entries,
+          totalDays: total.days,
         };
       })
-      .sort((a, b) => b.hours - a.hours || a.name.localeCompare(b.name));
+      .sort(
+        (a, b) => b.hours - a.hours || b.totalHours - a.totalHours || a.name.localeCompare(b.name),
+      );
 
     const daily = [...byDay.values()]
       .map((day) => ({ ...day, hours: roundHours(day.hours) }))

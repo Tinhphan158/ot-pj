@@ -18,7 +18,10 @@ const RANK_STYLES = ['bg-amber-400 text-amber-950', 'bg-slate-300 text-slate-800
 
 export function DashboardTopMembers({ members, currentUserId, limit = 10 }: DashboardTopMembersProps) {
   const visible = members.slice(0, limit);
-  const maxHours = members[0]?.hours ?? 0;
+  // Both bars share one scale — the largest registered total on the board — so
+  // the worked bar reads as a filled portion of it rather than its own ranking.
+  // Members are ordered by hours worked, so the widest total is not row one.
+  const scale = members.reduce((max, member) => Math.max(max, member.totalHours), 0);
 
   return (
     <Card>
@@ -27,18 +30,36 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
           <Crown className="size-4 text-amber-500" />
           Top OT
         </CardTitle>
-        <CardDescription>Ranked by OT hours already worked — upcoming days are not counted yet.</CardDescription>
+        <CardDescription>Ranked by OT hours already worked.</CardDescription>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span aria-hidden className="size-2.5 rounded-sm bg-primary/30" />
+            Worked so far
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span aria-hidden className="size-2.5 rounded-sm bg-primary/10" />
+            Registered for the period
+          </span>
+        </div>
       </CardHeader>
       <CardContent>
         {visible.length === 0 ? (
           <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
-            Nobody has worked overtime in this period yet.
+            Nobody has overtime in this period.
           </div>
         ) : (
           <ol className="flex flex-col gap-1">
             {visible.map((member, index) => {
               const mine = member.userId === currentUserId;
-              const pct = maxHours > 0 ? Math.max(2, Math.round((member.hours / maxHours) * 100)) : 0;
+              const totalPct = scale > 0 ? Math.max(2, Math.round((member.totalHours / scale) * 100)) : 0;
+              // Floored at a sliver only once there is something to show — zero
+              // hours worked must be zero width, or an all-upcoming member looks
+              // like they have started.
+              const workedPct =
+                scale > 0 && member.hours > 0
+                  ? Math.max(1, Math.round((member.hours / scale) * 100))
+                  : 0;
+              const upcoming = member.totalHours > member.hours;
               return (
                 <li
                   key={member.userId}
@@ -47,10 +68,17 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
                     mine && 'bg-primary/5',
                   )}
                 >
+                  {/* Registered total for the period — the envelope. */}
                   <span
                     aria-hidden
                     className="absolute inset-y-0 left-0 rounded-lg bg-primary/10"
-                    style={{ width: `${pct}%` }}
+                    style={{ width: `${totalPct}%` }}
+                  />
+                  {/* Worked so far, filling that envelope from the left. */}
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 rounded-lg bg-primary/30 transition-[width] duration-500 ease-out"
+                    style={{ width: `${workedPct}%` }}
                   />
                   <span
                     className={cn(
@@ -79,13 +107,22 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
                       <span className="truncate text-xs text-muted-foreground">
                         {member.email}
                       </span>
+                      {/* Only spell out the "of N" once the period still holds
+                          overtime to come — the card is narrow. */}
                       <span className="truncate text-xs text-muted-foreground">
-                        {member.entries} entries · {member.days} days
+                        {upcoming
+                          ? `${member.entries} of ${member.totalEntries} entries · ${member.days} of ${member.totalDays} days`
+                          : `${member.entries} entries · ${member.days} days`}
                       </span>
                     </div>
                   </div>
-                  <span className="relative shrink-0 text-sm font-semibold tabular-nums">
-                    {formatHours(member.hours)}
+                  <span className="relative shrink-0 text-right tabular-nums">
+                    <span className="block text-sm font-semibold">{formatHours(member.hours)}</span>
+                    {upcoming && (
+                      <span className="block text-xs text-muted-foreground">
+                        of {formatHours(member.totalHours)}
+                      </span>
+                    )}
                   </span>
                 </li>
               );

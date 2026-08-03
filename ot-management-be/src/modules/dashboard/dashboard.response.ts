@@ -1,18 +1,29 @@
 /**
- * A member's overtime that has already been worked. Every total here stops at
- * yesterday: registrations for today or later are plans, not hours put in.
+ * A member's overtime for the queried range, split into what has actually been
+ * worked and what the range holds in total.
+ *
+ * The un-prefixed fields stop at yesterday — a registration for today or later
+ * is a plan, not hours put in — while the `total*` fields cover the whole range,
+ * upcoming days included. The pair lets the client draw progress-so-far against
+ * the full commitment.
  */
 export type DashboardMemberStatDto = {
   userId: string;
   name: string;
   email: string;
   avatar: string | null;
-  /** Total overtime hours worked inside the queried range. */
+  /** Overtime hours worked so far — up to and including yesterday. */
   hours: number;
-  /** Number of overtime records inside the range. */
+  /** Number of overtime records already worked. */
   entries: number;
-  /** Distinct days the member worked overtime on. */
+  /** Distinct days the member has worked overtime on. */
   days: number;
+  /** Overtime hours registered across the whole range, upcoming days included. */
+  totalHours: number;
+  /** Number of overtime records across the whole range. */
+  totalEntries: number;
+  /** Distinct days the member registered overtime on across the whole range. */
+  totalDays: number;
 };
 
 export type DashboardDailyPointDto = {
@@ -36,9 +47,9 @@ export type DashboardResponseDto = {
   allTimeHours: number;
   allTimeEntries: number;
   /**
-   * The OT leaderboard, ranked by hours descending and un-truncated. Counts only
-   * overtime up to yesterday, so a member whose overtime in this range is still
-   * upcoming is absent here even though they count towards `activeMembers`.
+   * The OT leaderboard: every member with overtime in the range, un-truncated,
+   * ranked by hours *worked* descending. A member whose overtime is still
+   * upcoming is present with `hours: 0` and a non-zero `totalHours`.
    */
   topMembers: DashboardMemberStatDto[];
   /** Per-day totals inside the range, ascending. Days without overtime are omitted. */

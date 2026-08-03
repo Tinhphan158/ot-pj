@@ -14,12 +14,12 @@ interface DashboardPersonalStatsProps {
  * The signed-in user's own numbers for the selected period.
  *
  * Derived from `topMembers`, which the API returns un-truncated — every member
- * with worked overtime in the range is in there — so this needs no extra
- * request. A user with no overtime yet still gets the row, filled with zeros,
- * rather than having the section vanish.
+ * with overtime in the range is in there — so this needs no extra request. A
+ * user with no overtime yet still gets the row, filled with zeros, rather than
+ * having the section vanish.
  *
- * `topMembers` counts only overtime up to yesterday, so the company figures
- * compared against it come from that same list rather than from the range-wide
+ * These cards report overtime *worked*, so the company figures they compare
+ * against are summed from that same list rather than taken from the range-wide
  * `totalHours` / `activeMembers`, which include overtime still to come.
  */
 export function DashboardPersonalStats({ stats, currentUserId }: DashboardPersonalStatsProps) {
@@ -43,7 +43,9 @@ export function DashboardPersonalStats({ stats, currentUserId }: DashboardPerson
         label="My OT hours"
         value={formatHours(hours)}
         hint={
-          me
+          // The board keeps members whose overtime is all still ahead of them, so
+          // being on it is not the same as having worked any of it.
+          hours > 0
             ? `Ranked #${rankIndex + 1} of ${rankedMembers} with overtime`
             : 'You have no overtime worked in this period'
         }
