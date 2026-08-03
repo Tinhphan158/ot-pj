@@ -14,9 +14,13 @@ interface DashboardPersonalStatsProps {
  * The signed-in user's own numbers for the selected period.
  *
  * Derived from `topMembers`, which the API returns un-truncated — every member
- * with overtime in the range is in there — so this needs no extra request. A
- * user with no overtime yet still gets the row, filled with zeros, rather than
- * having the section vanish.
+ * with worked overtime in the range is in there — so this needs no extra
+ * request. A user with no overtime yet still gets the row, filled with zeros,
+ * rather than having the section vanish.
+ *
+ * `topMembers` counts only overtime up to yesterday, so the company figures
+ * compared against it come from that same list rather than from the range-wide
+ * `totalHours` / `activeMembers`, which include overtime still to come.
  */
 export function DashboardPersonalStats({ stats, currentUserId }: DashboardPersonalStatsProps) {
   const rankIndex = currentUserId
@@ -28,7 +32,9 @@ export function DashboardPersonalStats({ stats, currentUserId }: DashboardPerson
   const entries = me?.entries ?? 0;
   const days = me?.days ?? 0;
 
-  const sharePercent = stats.totalHours > 0 ? Math.round((hours / stats.totalHours) * 100) : 0;
+  const rankedMembers = stats.topMembers.length;
+  const companyHours = stats.topMembers.reduce((total, member) => total + member.hours, 0);
+  const sharePercent = companyHours > 0 ? Math.round((hours / companyHours) * 100) : 0;
   const avgPerDay = days > 0 ? hours / days : 0;
 
   return (
@@ -38,8 +44,8 @@ export function DashboardPersonalStats({ stats, currentUserId }: DashboardPerson
         value={formatHours(hours)}
         hint={
           me
-            ? `Ranked #${rankIndex + 1} of ${stats.activeMembers} with overtime`
-            : 'You have no overtime in this period'
+            ? `Ranked #${rankIndex + 1} of ${rankedMembers} with overtime`
+            : 'You have no overtime worked in this period'
         }
         icon={Clock}
       />
@@ -60,7 +66,7 @@ export function DashboardPersonalStats({ stats, currentUserId }: DashboardPerson
       <AppStatCard
         label="My share of company OT"
         value={`${sharePercent}%`}
-        hint={`Of ${formatHours(stats.totalHours)} logged company-wide`}
+        hint={`Of ${formatHours(companyHours)} worked company-wide`}
         icon={PieChart}
         accentClassName="bg-chart-4/15 text-chart-4"
       />

@@ -1,15 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { roundHours } from '@/utils';
-import { DashboardRepository } from './dashboard.repository';
+import { roundHours, startOfToday, toDateString } from '@/utils';
+import { DashboardRepository, OvertimeMemberDayGroup } from './dashboard.repository';
 import { QueryDashboardDto } from './dto';
 import { DashboardDailyPointDto, DashboardMemberStatDto, DashboardResponseDto } from './dashboard.response';
 
 type MemberAccumulator = { hours: number; entries: number; days: number };
 
-/** Format a Date as a YYYY-MM-DD string (date-only field). */
-function toDateString(date: Date): string {
-  return date.toISOString().slice(0, 10);
+/** Fold one (member, day) bucket into a per-member running total. */
+function accumulate(byMember: Map<string, MemberAccumulator>, group: OvertimeMemberDayGroup): void {
+  const member = byMember.get(group.userId) ?? { hours: 0, entries: 0, days: 0 };
+  member.hours += group.hours;
+  member.entries += group.entries;
+  member.days += 1;
+  byMember.set(group.userId, member);
 }
 
 @Injectable()
@@ -33,14 +37,16 @@ export class DashboardService {
     ]);
 
     const byMember = new Map<string, MemberAccumulator>();
+    // The leaderboard ranks overtime that has actually been worked, so it stops
+    // at yesterday — a registration for a day that has not arrived yet is a
+    // plan, not hours anybody has put in.
+    const byMemberElapsed = new Map<string, MemberAccumulator>();
     const byDay = new Map<string, DashboardDailyPointDto>();
+    const today = startOfToday();
 
     for (const group of groups) {
-      const member = byMember.get(group.userId) ?? { hours: 0, entries: 0, days: 0 };
-      member.hours += group.hours;
-      member.entries += group.entries;
-      member.days += 1;
-      byMember.set(group.userId, member);
+      accumulate(byMember, group);
+      if (group.date < today) accumulate(byMemberElapsed, group);
 
       const date = toDateString(group.date);
       const day = byDay.get(date) ?? { date, hours: 0, entries: 0 };
@@ -54,7 +60,7 @@ export class DashboardService {
       : [];
     const memberById = new Map(members.map((member) => [member.id, member]));
 
-    const topMembers: DashboardMemberStatDto[] = [...byMember.entries()]
+    const topMembers: DashboardMemberStatDto[] = [...byMemberElapsed.entries()]
       .map(([userId, stats]) => {
         const member = memberById.get(userId);
         return {

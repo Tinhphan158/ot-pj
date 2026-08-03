@@ -1,3 +1,7 @@
+/**
+ * A member's overtime that has already been worked — every total stops at
+ * yesterday, so overtime registered for today or later is not in here.
+ */
 export interface DashboardMemberStat {
   userId: string;
   name: string;
@@ -5,7 +9,7 @@ export interface DashboardMemberStat {
   avatar: string | null;
   hours: number;
   entries: number;
-  /** Distinct days the member registered overtime on. */
+  /** Distinct days the member worked overtime on. */
   days: number;
 }
 
@@ -26,7 +30,7 @@ export interface DashboardStats {
   busiestDay: DashboardDailyPoint | null;
   allTimeHours: number;
   allTimeEntries: number;
-  /** Active members ranked by hours descending. */
+  /** Members ranked by hours descending — worked overtime only, upcoming excluded. */
   topMembers: DashboardMemberStat[];
   /** Per-day totals inside the range, ascending. Days without overtime are omitted. */
   daily: DashboardDailyPoint[];

@@ -27,12 +27,12 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
           <Crown className="size-4 text-amber-500" />
           Top OT
         </CardTitle>
-        <CardDescription>Ranked by total OT hours in the period.</CardDescription>
+        <CardDescription>Ranked by OT hours already worked — upcoming days are not counted yet.</CardDescription>
       </CardHeader>
       <CardContent>
         {visible.length === 0 ? (
           <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
-            Nobody has logged overtime in this period.
+            Nobody has worked overtime in this period yet.
           </div>
         ) : (
           <ol className="flex flex-col gap-1">
