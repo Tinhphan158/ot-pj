@@ -8,7 +8,29 @@ import { userColor } from '@/features/overtime/utils/userColor';
 import { OvertimeBar, type OvertimeBarProps } from '@/features/overtime/components/OvertimeBar';
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 import { addDays, isSameDay, timeToMinutes, toDateStr } from '@/features/overtime/utils/period';
-import { OVERTIME_DOMAIN } from '@/features/overtime/utils/timeDomain';
+import { buildTimeDomain, formatTick, type TimeDomain } from '@/features/overtime/utils/timeDomain';
+import { FALLBACK_WINDOW, isDateLocked, windowFor } from '@/features/overtime/utils/rules';
+import { useOvertimeRulesQuery } from '@/features/overtime/hooks/queries/useOvertimeRulesQuery';
+import { OvertimeDayBadges } from '@/features/overtime/components/OvertimeDayBadges';
+
+const percentOf = (domain: TimeDomain, minutes: number) => ((minutes - domain.start) / domain.span) * 100;
+
+/** Hour labels across a track of the given domain. */
+function HourAxis({ domain }: { domain: TimeDomain }) {
+  return (
+    <div className="relative h-5 flex-1">
+      {domain.hourTicks.map((tick) => (
+        <span
+          key={tick}
+          className="absolute -translate-x-1/2 text-[11px] text-muted-foreground"
+          style={{ left: `${percentOf(domain, tick)}%` }}
+        >
+          {formatTick(tick)}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 interface OvertimeWeekViewProps {
   overtimes: Overtime[];
@@ -29,8 +51,11 @@ export function OvertimeWeekView({
 }: OvertimeWeekViewProps) {
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
-  const { start: domainStart, span, hourTicks } = OVERTIME_DOMAIN;
-  const percent = (minutes: number) => ((minutes - domainStart) / span) * 100;
+  const { data: rules } = useOvertimeRulesQuery();
+  // The header axis is the weekday evening. Days off have a longer window and
+  // carry their own axis under the day's heading, so a weekday bar never shrinks
+  // to fit a Saturday.
+  const weekdayDomain = useMemo(() => buildTimeDomain(rules?.windows.weekday ?? FALLBACK_WINDOW), [rules]);
 
   const byDay = useMemo(() => {
     const map = new Map<string, Overtime[]>();
@@ -56,18 +81,8 @@ export function OvertimeWeekView({
     <div className="rounded-xl border bg-card p-4">
       {/* Shared hour axis */}
       <div className="flex">
-        <div className="w-100 shrink-0" />
-        <div className="relative h-5 flex-1">
-          {hourTicks.map((tick) => (
-            <span
-              key={tick}
-              className="absolute -translate-x-1/2 text-[11px] text-muted-foreground"
-              style={{ left: `${percent(tick)}%` }}
-            >
-              {String(Math.floor(tick / 60)).padStart(2, '0')}:00
-            </span>
-          ))}
-        </div>
+        <div className="w-80 shrink-0" />
+        <HourAxis domain={weekdayDomain} />
       </div>
 
       <div className="flex flex-col">
@@ -75,6 +90,10 @@ export function OvertimeWeekView({
           const dateStr = toDateStr(day);
           const records = byDay.get(dateStr) ?? [];
           const isToday = isSameDay(day, today);
+          const allowed = windowFor(dateStr, rules);
+          const domain = allowed === (rules?.windows.weekday ?? FALLBACK_WINDOW) ? weekdayDomain : buildTimeDomain(allowed);
+          const ownAxis = domain !== weekdayDomain;
+          const locked = isDateLocked(dateStr, rules);
           return (
             <div key={dateStr} className="border-t py-2 first:border-t-0">
               <button
@@ -89,7 +108,15 @@ export function OvertimeWeekView({
                 {records.length > 0 && (
                   <span className="text-xs text-muted-foreground">· {records.length} people</span>
                 )}
+                <OvertimeDayBadges date={dateStr} rules={rules} />
               </button>
+
+              {ownAxis && records.length > 0 && (
+                <div className="flex">
+                  <div className="w-80 shrink-0" />
+                  <HourAxis domain={domain} />
+                </div>
+              )}
 
               {records.length === 0 ? (
                 <p className="pl-80 text-xs text-muted-foreground">No overtime</p>
@@ -116,19 +143,20 @@ export function OvertimeWeekView({
                         </div>
 
                         <div className="relative h-8 flex-1 rounded-md bg-muted/40">
-                          {hourTicks.map((tick) => (
+                          {domain.hourTicks.map((tick) => (
                             <span
                               key={tick}
                               className="absolute top-0 h-full w-px bg-border/70"
-                              style={{ left: `${percent(tick)}%` }}
+                              style={{ left: `${percentOf(domain, tick)}%` }}
                             />
                           ))}
                           <OvertimeBar
                             overtime={row}
                             color={color}
                             isMine={isMine}
-                            domainStart={domainStart}
-                            domainSpan={span}
+                            domainStart={domain.start}
+                            domainSpan={domain.span}
+                            locked={locked}
                             size="sm"
                             onSelect={onSelect}
                             onResize={onResize}
@@ -150,7 +178,7 @@ export function OvertimeWeekView({
         </span>
         <span>
           Each colour is a person · click a day for detail · click a bar to edit · drag either end of
-          your own bar to adjust it in 5-minute steps · overtime runs 17:00–22:00
+          your own bar to adjust it in 5-minute steps · weekday overtime runs {formatTick(weekdayDomain.start)}–{formatTick(weekdayDomain.end)}; weekends and holidays show their own, longer axis
         </span>
       </div>
     </div>

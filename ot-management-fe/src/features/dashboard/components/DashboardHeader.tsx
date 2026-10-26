@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AppPageHeader } from '@/shared/components/custome';
 import { Button } from '@/shared/components/ui/button';
@@ -12,9 +13,11 @@ interface DashboardHeaderProps {
   onPeriodChange: (period: DashboardPeriod) => void;
   onShift: (delta: number) => void;
   onToday: () => void;
+  /** Extra controls (filter, export) shown before the period navigation. */
+  actions?: ReactNode;
 }
 
-export function DashboardHeader({ period, anchor, onPeriodChange, onShift, onToday }: DashboardHeaderProps) {
+export function DashboardHeader({ period, anchor, onPeriodChange, onShift, onToday, actions }: DashboardHeaderProps) {
   return (
     <>
       <AppPageHeader
@@ -33,7 +36,8 @@ export function DashboardHeader({ period, anchor, onPeriodChange, onShift, onTod
           </TabsList>
         </Tabs>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {actions}
           <Button variant="outline" size="sm" onClick={onToday}>
             Today
           </Button>

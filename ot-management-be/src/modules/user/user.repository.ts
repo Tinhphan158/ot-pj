@@ -10,6 +10,10 @@ export class UserRepository {
     return this.db.user.findUnique({ where: { email } });
   }
 
+  findAll(): Promise<User[]> {
+    return this.db.user.findMany({ orderBy: { name: 'asc' } });
+  }
+
   findById(id: string): Promise<User | null> {
     return this.db.user.findUnique({ where: { id } });
   }

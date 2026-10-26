@@ -15,9 +15,14 @@ export const API_PATHS = {
   OVERTIMES: {
     BASE: '/overtimes',
     RANGE: '/overtimes/range',
+    RULES: '/overtimes/rules',
+    USAGE: '/overtimes/usage',
+    AUDIT_LOGS: '/overtimes/audit-logs',
+    EXPORT: '/overtimes/export',
     DETAIL: (id: string) => `/overtimes/${id}`,
   },
   USERS: {
+    BASE: '/users',
     ME: '/users/me',
     ME_PASSWORD: '/users/me/password',
   },

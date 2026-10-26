@@ -10,6 +10,11 @@ import { ChangePasswordDto, UpdateProfileDto } from './dto';
 export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
 
+  /** Everyone in the company, by name — the dashboard's member filter lists these. */
+  async findAll(): Promise<UserResponseDto[]> {
+    return UserMapper.toResponseList(await this.userRepository.findAll());
+  }
+
   async getMe(userId: string): Promise<UserResponseDto> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundException('User not found', 'USER_NOT_FOUND');

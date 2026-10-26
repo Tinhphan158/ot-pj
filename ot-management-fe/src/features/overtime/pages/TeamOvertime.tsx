@@ -26,6 +26,8 @@ import { OvertimeMonthView } from '@/features/overtime/components/OvertimeMonthV
 import { OvertimeYearView } from '@/features/overtime/components/OvertimeYearView';
 import { OvertimeDrawer } from '@/features/overtime/components/dialog/OvertimeDrawer';
 import { OvertimeCrowdedDayDialog } from '@/features/overtime/components/dialog/OvertimeCrowdedDayDialog';
+import { OvertimeLimitBanner } from '@/features/overtime/components/OvertimeLimitBanner';
+import { OvertimeExportButton } from '@/features/overtime/components/OvertimeExportButton';
 
 const VIEW_OPTIONS: { value: OvertimeView; label: string }[] = [
   { value: 'day', label: 'Day' },
@@ -82,12 +84,17 @@ export default function TeamOvertime() {
         title="Overtime management"
         description="See who is working overtime and during which time slots — pick a day, or browse by week, month or year."
         actions={
-          <Button onClick={() => actions.openCreate(toDateStr(anchor))}>
-            <Plus className="size-4" />
-            Register overtime
-          </Button>
+          <div className="flex items-center gap-2">
+            <OvertimeExportButton from={from} to={to} />
+            <Button onClick={() => actions.openCreate(toDateStr(anchor))}>
+              <Plus className="size-4" />
+              Register overtime
+            </Button>
+          </div>
         }
       />
+
+      <OvertimeLimitBanner className="mb-4" />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Tabs value={view} onValueChange={(value) => setView(value as OvertimeView)}>
@@ -147,6 +154,7 @@ export default function TeamOvertime() {
         </div>
       ) : view === 'day' ? (
         <OvertimeDayTimeline
+          date={toDateStr(anchor)}
           overtimes={items}
           currentUserId={currentUser?.id}
           onSelect={actions.openEdit}

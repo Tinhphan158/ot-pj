@@ -16,7 +16,8 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  overtimes Overtime[]
+  overtimes         Overtime[]
+  overtimeAuditLogs OvertimeAuditLog[]
 
   @@map("users")
 }
@@ -35,4 +36,29 @@ model Overtime {
   @@index([userId])
   @@index([date])
   @@map("overtimes")
+}
+
+enum OvertimeAuditAction {
+  CREATED
+  UPDATED
+  DELETED
+}
+
+/// One change to an overtime entry. Kept after the entry itself is deleted, so
+/// `overtimeId` is deliberately not a foreign key.
+model OvertimeAuditLog {
+  id         String              @id @default(uuid())
+  overtimeId String              @map("overtime_id")
+  actorId    String?             @map("actor_id")
+  actor      User?               @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     OvertimeAuditAction
+  /// The entry as it was before the change; null on CREATED.
+  before     Json?
+  /// The entry as it is after the change; null on DELETED.
+  after      Json?
+  createdAt  DateTime            @default(now()) @map("created_at")
+
+  @@index([overtimeId])
+  @@index([createdAt])
+  @@map("overtime_audit_logs")
 }

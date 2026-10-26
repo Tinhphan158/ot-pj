@@ -1,12 +1,6 @@
-/**
- * Overtime is only allowed in the evening window 17:00–22:00, so that window is
- * the whole axis: the timelines never draw an hour outside it and a drag cannot
- * leave it. Keep these in step with the same rule on the server.
- */
-export const OT_WINDOW_START_MINUTES = 17 * 60;
-export const OT_WINDOW_END_MINUTES = 22 * 60;
-export const OT_WINDOW_START_TIME = '17:00';
-export const OT_WINDOW_END_TIME = '22:00';
+import type { OvertimeWindow } from '@/shared/api';
+import { timeToMinutes } from '@/features/overtime/utils/period';
+import { FALLBACK_WINDOW } from '@/features/overtime/utils/rules';
 
 export interface TimeDomain {
   /** First minute on the axis. */
@@ -26,13 +20,17 @@ function buildHourTicks(start: number, end: number): number[] {
 }
 
 /**
- * The hour axis every timeline draws on. Fixed rather than derived from the
- * entries on screen, so the same evening occupies the same pixels on every view
- * and from one day to the next.
+ * The hour axis for a day is exactly the window overtime may be registered in
+ * on it: a timeline never draws an hour outside it and a drag cannot leave it.
+ * Fixed per window rather than derived from the entries on screen, so the same
+ * evening occupies the same pixels on every view and from one day to the next.
  */
-export const OVERTIME_DOMAIN: TimeDomain = {
-  start: OT_WINDOW_START_MINUTES,
-  end: OT_WINDOW_END_MINUTES,
-  span: OT_WINDOW_END_MINUTES - OT_WINDOW_START_MINUTES,
-  hourTicks: buildHourTicks(OT_WINDOW_START_MINUTES, OT_WINDOW_END_MINUTES),
-};
+export function buildTimeDomain(window: OvertimeWindow): TimeDomain {
+  const start = timeToMinutes(window.start);
+  const end = timeToMinutes(window.end);
+  return { start, end, span: end - start, hourTicks: buildHourTicks(start, end) };
+}
+
+export const FALLBACK_DOMAIN = buildTimeDomain(FALLBACK_WINDOW);
+
+export const formatTick = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:00`;

@@ -9,6 +9,11 @@ import { ChangePasswordDto, UpdateProfileDto } from './dto';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Get()
+  findAll(): Promise<UserResponseDto[]> {
+    return this.userService.findAll();
+  }
+
   @Get('me')
   getMe(@CurrentUser() user: JwtPayload): Promise<UserResponseDto> {
     return this.userService.getMe(user.id);

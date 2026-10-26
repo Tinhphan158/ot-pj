@@ -5,7 +5,6 @@ import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { timeToMinutes } from '@/features/overtime/utils/period';
-import { OT_WINDOW_END_MINUTES, OT_WINDOW_START_MINUTES } from '@/features/overtime/utils/timeDomain';
 
 /**
  * Drag granularity. Kept small on purpose: the axis spans a five-hour evening
@@ -23,8 +22,13 @@ export interface OvertimeBarProps {
   isMine: boolean;
   /** First minute shown by the track this bar sits in. */
   domainStart: number;
-  /** Minutes the track spans, used to convert pixels to time. */
+  /**
+   * Minutes the track spans, used to convert pixels to time. The track is the
+   * day's allowed window, so it also bounds a drag.
+   */
   domainSpan: number;
+  /** The entry's OT month is closed: no dragging, whoever owns it. */
+  locked?: boolean;
   size?: 'sm' | 'md';
   onSelect?: (overtime: Overtime) => void;
   /**
@@ -45,6 +49,8 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 
 interface DragState {
   edge: 'start' | 'end';
+  windowStart: number;
+  windowEnd: number;
   originX: number;
   trackWidth: number;
   start: number;
@@ -54,7 +60,7 @@ interface DragState {
 
 /**
  * The range `drag` describes once its edge is moved by `offset` minutes, held
- * inside the allowed evening window. Entries stored outside it — from before the
+ * inside the day's allowed window. Entries stored outside it — from before the
  * rule, or seeded — keep their other edge, so a drag narrows them towards the
  * window instead of refusing to move.
  */
@@ -62,16 +68,16 @@ function offsetRange(drag: DragState, offset: number): { start: number; end: num
   if (drag.edge === 'start') {
     // The window bound wins over the minimum duration, so an entry shorter than
     // one duration cannot be dragged out of the window to satisfy it.
-    const latest = Math.max(OT_WINDOW_START_MINUTES, drag.end - MIN_DURATION_MINUTES);
+    const latest = Math.max(drag.windowStart, drag.end - MIN_DURATION_MINUTES);
     return {
-      start: clamp(snap(drag.start + offset), OT_WINDOW_START_MINUTES, latest),
+      start: clamp(snap(drag.start + offset), drag.windowStart, latest),
       end: drag.end,
     };
   }
-  const earliest = Math.min(OT_WINDOW_END_MINUTES, drag.start + MIN_DURATION_MINUTES);
+  const earliest = Math.min(drag.windowEnd, drag.start + MIN_DURATION_MINUTES);
   return {
     start: drag.start,
-    end: clamp(snap(drag.end + offset), earliest, OT_WINDOW_END_MINUTES),
+    end: clamp(snap(drag.end + offset), earliest, drag.windowEnd),
   };
 }
 
@@ -91,6 +97,7 @@ export function OvertimeBar({
   isMine,
   domainStart,
   domainSpan,
+  locked = false,
   size = 'md',
   onSelect,
   onResize,
@@ -112,8 +119,9 @@ export function OvertimeBar({
   // Entries stored outside the allowed window predate the rule (or came from the
   // seed). Dragging one edge could never make them legal, so they are read-only
   // here and have to be corrected in the drawer.
-  const withinWindow = storedStart >= OT_WINDOW_START_MINUTES && storedEnd <= OT_WINDOW_END_MINUTES;
-  const resizable = Boolean(onResize) && isMine && withinWindow;
+  const domainEnd = domainStart + domainSpan;
+  const withinWindow = storedStart >= domainStart && storedEnd <= domainEnd;
+  const resizable = Boolean(onResize) && isMine && withinWindow && !locked;
 
   const startMinutes = draft?.start ?? storedStart;
   const endMinutes = draft?.end ?? storedEnd;
@@ -139,6 +147,8 @@ export function OvertimeBar({
 
     dragRef.current = {
       edge,
+      windowStart: domainStart,
+      windowEnd: domainEnd,
       originX: event.clientX,
       trackWidth: track.getBoundingClientRect().width,
       start: storedStart,
@@ -201,7 +211,7 @@ export function OvertimeBar({
         isSaving && 'opacity-70',
       )}
       style={{ left: `${left}%`, width: `${width}%`, backgroundColor: color }}
-      title={`${overtime.user?.name ?? ''} · ${startLabel}–${endLabel}`}
+      title={`${overtime.user?.name ?? ''} · ${startLabel}–${endLabel}${locked ? ' · month closed' : ''}`}
     >
       <button
         type="button"

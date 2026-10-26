@@ -43,4 +43,6 @@ export interface DashboardStats {
   topMembers: DashboardMemberStat[];
   /** Per-day totals inside the range, ascending. Days without overtime are omitted. */
   daily: DashboardDailyPoint[];
+  /** Per-person overtime caps, enforced by the API when overtime is registered. */
+  limits: { monthlyHours: number; yearlyHours: number };
 }

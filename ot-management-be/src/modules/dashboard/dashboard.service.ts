@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { roundHours, startOfToday, toDateString } from '@/utils';
+import {
+  OVERTIME_MONTHLY_LIMIT_HOURS,
+  OVERTIME_YEARLY_LIMIT_HOURS,
+  roundHours,
+  startOfToday,
+  toDateString,
+} from '@/utils';
 import { DashboardRepository, OvertimeMemberDayGroup } from './dashboard.repository';
 import { QueryDashboardDto } from './dto';
 import { DashboardDailyPointDto, DashboardMemberStatDto, DashboardResponseDto } from './dashboard.response';
@@ -29,30 +35,41 @@ export class DashboardService {
       date: { gte: new Date(query.from), lt: new Date(query.to) },
     };
 
-    const [totalMembers, rangeTotals, allTimeTotals, groups] = await Promise.all([
+    const today = startOfToday();
+
+    const [totalMembers, allTimeTotals, groups] = await Promise.all([
       this.dashboardRepository.countMembers(),
-      this.dashboardRepository.sumOvertime(where),
-      this.dashboardRepository.sumOvertime({}),
+      this.dashboardRepository.sumOvertime({ date: { lt: today } }),
       this.dashboardRepository.groupByMemberAndDay(where),
     ]);
 
     const byMember = new Map<string, MemberAccumulator>();
-    // The leaderboard ranks overtime that has actually been worked, so it stops
-    // at yesterday — a registration for a day that has not arrived yet is a
-    // plan, not hours anybody has put in.
+    // The headline figures and the leaderboard count overtime that has actually
+    // been worked, so they stop at yesterday — a registration for a day that has
+    // not arrived yet is a plan, not hours anybody has put in.
     const byMemberElapsed = new Map<string, MemberAccumulator>();
     const byDay = new Map<string, DashboardDailyPointDto>();
-    const today = startOfToday();
+    // The trend for one member when the dashboard is filtered to them.
+    const byDayForMember = new Map<string, DashboardDailyPointDto>();
+    const rangeTotals = { hours: 0, entries: 0 };
 
     for (const group of groups) {
       accumulate(byMember, group);
-      if (group.date < today) accumulate(byMemberElapsed, group);
+      if (group.date < today) {
+        accumulate(byMemberElapsed, group);
+        rangeTotals.hours += group.hours;
+        rangeTotals.entries += group.entries;
+      }
 
       const date = toDateString(group.date);
       const day = byDay.get(date) ?? { date, hours: 0, entries: 0 };
       day.hours += group.hours;
       day.entries += group.entries;
       byDay.set(date, day);
+
+      if (group.userId === query.userId) {
+        byDayForMember.set(date, { date, hours: group.hours, entries: group.entries });
+      }
     }
 
     const members = byMember.size
@@ -84,16 +101,23 @@ export class DashboardService {
         (a, b) => b.hours - a.hours || b.totalHours - a.totalHours || a.name.localeCompare(b.name),
       );
 
-    const daily = [...byDay.values()]
-      .map((day) => ({ ...day, hours: roundHours(day.hours) }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const toSortedDaily = (days: Map<string, DashboardDailyPointDto>) =>
+      [...days.values()]
+        .map((day) => ({ ...day, hours: roundHours(day.hours) }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    const companyDaily = toSortedDaily(byDay);
 
-    const busiestDay = daily.reduce<DashboardDailyPointDto | null>(
-      (best, day) => (best === null || day.hours > best.hours ? day : best),
-      null,
-    );
+    // The trend keeps upcoming days; the busiest day is company-wide and picked
+    // from the days already worked.
+    const todayString = toDateString(today);
+    const busiestDay = companyDaily
+      .filter((day) => day.date < todayString)
+      .reduce<DashboardDailyPointDto | null>(
+        (best, day) => (best === null || day.hours > best.hours ? day : best),
+        null,
+      );
 
-    const activeMembers = byMember.size;
+    const activeMembers = byMemberElapsed.size;
 
     return {
       range: { from: query.from, to: query.to },
@@ -106,7 +130,8 @@ export class DashboardService {
       allTimeHours: roundHours(allTimeTotals.hours),
       allTimeEntries: allTimeTotals.entries,
       topMembers,
-      daily,
+      daily: query.userId ? toSortedDaily(byDayForMember) : companyDaily,
+      limits: { monthlyHours: OVERTIME_MONTHLY_LIMIT_HOURS, yearlyHours: OVERTIME_YEARLY_LIMIT_HOURS },
     };
   }
 }

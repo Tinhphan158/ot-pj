@@ -6,6 +6,8 @@ import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
 import { addDays, isSameDay, monthCycle, toDateStr } from '@/features/overtime/utils/period';
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
+import { holidayName, isDateLocked } from '@/features/overtime/utils/rules';
+import { useOvertimeRulesQuery } from '@/features/overtime/hooks/queries/useOvertimeRulesQuery';
 
 interface OvertimeMonthViewProps {
   overtimes: Overtime[];
@@ -24,6 +26,7 @@ interface UserRow {
 
 export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSelectDay }: OvertimeMonthViewProps) {
   const { labelMonth, labelYear } = monthCycle(monthAnchor);
+  const { data: rules } = useOvertimeRulesQuery();
   // Columns span the OT cycle (21st of prev month → 20th of the label month).
   const days = useMemo(() => {
     const { start, endExclusive } = monthCycle(monthAnchor);
@@ -86,12 +89,18 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
                 const dow = day.getDay();
                 const weekend = dow === 0 || dow === 6;
                 const isToday = isSameDay(day, today);
+                const holiday = holidayName(toDateStr(day), rules);
                 return (
                   <th
                     key={day.getDate()}
+                    title={holiday}
                     className={cn(
                       'w-12 border-b px-0 py-2 text-center text-[11px] font-medium',
-                      weekend ? 'text-muted-foreground/60' : 'text-muted-foreground',
+                      holiday
+                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                        : weekend
+                          ? 'text-muted-foreground/60'
+                          : 'text-muted-foreground',
                     )}
                   >
                     <span
@@ -163,7 +172,14 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
           <span className="size-3 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--primary) 60%, transparent)' }} />
           Darker cells mean more hours
         </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-3 rounded bg-rose-500/30" />
+          Public holiday
+        </span>
         <span>Click a cell to see that day&apos;s detail</span>
+        {rules && days.length > 0 && isDateLocked(toDateStr(days[0]), rules) && (
+          <span className="font-medium">This OT month is closed — entries can no longer be changed</span>
+        )}
       </div>
     </div>
   );

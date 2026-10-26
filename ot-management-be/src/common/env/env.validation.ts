@@ -18,4 +18,5 @@ export const envValidationSchema = Joi.object({
   [ENV.MAIL_USER]: Joi.string().allow('').optional(),
   [ENV.MAIL_PASSWORD]: Joi.string().allow('').optional(),
   [ENV.MAIL_FROM]: Joi.string().allow('').optional(),
+  [ENV.OVERTIME_LOCK_GRACE_DAYS]: Joi.number().integer().min(0).default(3),
 });

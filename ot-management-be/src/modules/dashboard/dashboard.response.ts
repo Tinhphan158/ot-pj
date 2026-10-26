@@ -37,7 +37,7 @@ export type DashboardResponseDto = {
   range: { from: string; to: string };
   /** Everyone in the company, whether or not they registered overtime. */
   totalMembers: number;
-  /** Members with at least one overtime record inside the range, upcoming included. */
+  /** Members who have worked overtime inside the range — up to yesterday, like the totals below. */
   activeMembers: number;
   totalHours: number;
   totalEntries: number;
@@ -52,6 +52,11 @@ export type DashboardResponseDto = {
    * upcoming is present with `hours: 0` and a non-zero `totalHours`.
    */
   topMembers: DashboardMemberStatDto[];
-  /** Per-day totals inside the range, ascending. Days without overtime are omitted. */
+  /**
+   * Per-day totals inside the range, ascending — for the member asked for in
+   * `userId`, or company-wide without it. Days without overtime are omitted.
+   */
   daily: DashboardDailyPointDto[];
+  /** Per-person overtime caps, enforced when overtime is registered. */
+  limits: { monthlyHours: number; yearlyHours: number };
 };

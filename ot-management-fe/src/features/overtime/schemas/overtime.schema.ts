@@ -1,34 +1,41 @@
 import { z } from 'zod';
-import {
-  OT_WINDOW_END_MINUTES,
-  OT_WINDOW_END_TIME,
-  OT_WINDOW_START_MINUTES,
-  OT_WINDOW_START_TIME,
-} from '@/features/overtime/utils/timeDomain';
+import type { OvertimeWindow } from '@/shared/api';
 import { timeToMinutes } from '@/features/overtime/utils/period';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-const WINDOW_HINT = `Overtime must fall between ${OT_WINDOW_START_TIME} and ${OT_WINDOW_END_TIME}`;
+const baseSchema = z.object({
+  date: z.string().min(1, 'Date is required'),
+  startTime: z.string().regex(TIME_REGEX, 'Use HH:mm format'),
+  endTime: z.string().regex(TIME_REGEX, 'Use HH:mm format'),
+});
 
-export const overtimeSchema = z
-  .object({
-    date: z.string().min(1, 'Date is required'),
-    startTime: z.string().regex(TIME_REGEX, 'Use HH:mm format'),
-    endTime: z.string().regex(TIME_REGEX, 'Use HH:mm format'),
-  })
-  .superRefine((values, ctx) => {
+export type OvertimeFormValues = z.infer<typeof baseSchema>;
+
+/**
+ * The form's schema. The allowed hours depend on the chosen day — a weekday
+ * evening or a whole day off — so the caller supplies the lookup.
+ */
+export function createOvertimeSchema(windowFor: (date: string) => OvertimeWindow) {
+  return baseSchema.superRefine((values, ctx) => {
     // Only worth checking once both fields parse; the regex reports the rest.
     if (!TIME_REGEX.test(values.startTime) || !TIME_REGEX.test(values.endTime)) return;
 
     const start = timeToMinutes(values.startTime);
     const end = timeToMinutes(values.endTime);
 
-    if (start < OT_WINDOW_START_MINUTES || start > OT_WINDOW_END_MINUTES) {
-      ctx.addIssue({ code: 'custom', path: ['startTime'], message: WINDOW_HINT });
-    }
-    if (end < OT_WINDOW_START_MINUTES || end > OT_WINDOW_END_MINUTES) {
-      ctx.addIssue({ code: 'custom', path: ['endTime'], message: WINDOW_HINT });
+    if (values.date) {
+      const window = windowFor(values.date);
+      const windowStart = timeToMinutes(window.start);
+      const windowEnd = timeToMinutes(window.end);
+      const hint = `Overtime on this day must fall between ${window.start} and ${window.end}`;
+
+      if (start < windowStart || start > windowEnd) {
+        ctx.addIssue({ code: 'custom', path: ['startTime'], message: hint });
+      }
+      if (end < windowStart || end > windowEnd) {
+        ctx.addIssue({ code: 'custom', path: ['endTime'], message: hint });
+      }
     }
     if (end <= start) {
       ctx.addIssue({
@@ -38,8 +45,7 @@ export const overtimeSchema = z
       });
     }
   });
-
-export type OvertimeFormValues = z.infer<typeof overtimeSchema>;
+}
 
 export const OVERTIME_EMPTY: OvertimeFormValues = {
   date: '',

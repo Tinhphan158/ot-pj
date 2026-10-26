@@ -57,6 +57,7 @@ services:
       MAIL_USER: ${MAIL_USER:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-OT Management <no-reply@ot.local>}
+      OVERTIME_LOCK_GRACE_DAYS: ${OVERTIME_LOCK_GRACE_DAYS:-3}
       RUN_SEED: ${RUN_SEED:-false}
 
   web:

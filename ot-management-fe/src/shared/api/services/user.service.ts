@@ -13,6 +13,7 @@ export interface ChangePasswordPayload {
 }
 
 export const userService = {
+  findAll: () => http.get<User[]>(API_PATHS.USERS.BASE),
   getMe: () => http.get<User>(API_PATHS.USERS.ME),
   updateProfile: (payload: UpdateProfilePayload) => http.patch<User>(API_PATHS.USERS.ME, payload),
   changePassword: (payload: ChangePasswordPayload) =>

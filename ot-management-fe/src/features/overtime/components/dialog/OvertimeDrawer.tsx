@@ -1,15 +1,21 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useMemo, useRef } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Trash2 } from 'lucide-react';
+import { History, Loader2, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet';
 import { Form } from '@/shared/components/ui/form';
 import { Button } from '@/shared/components/ui/button';
 import type { Overtime } from '@/shared/api';
-import { OVERTIME_EMPTY, overtimeSchema, type OvertimeFormValues } from '@/features/overtime/schemas/overtime.schema';
+import { OVERTIME_EMPTY, createOvertimeSchema, type OvertimeFormValues } from '@/features/overtime/schemas/overtime.schema';
+import { useOvertimeRulesQuery } from '@/features/overtime/hooks/queries/useOvertimeRulesQuery';
+import { useOvertimeAuditLogsQuery } from '@/features/overtime/hooks/queries/useOvertimeAuditLogsQuery';
+import { isDateLocked, windowFor } from '@/features/overtime/utils/rules';
+import { timeToMinutes } from '@/features/overtime/utils/period';
+import { OvertimeAuditItem } from '../audit/OvertimeAuditItem';
 import { OvertimeForm } from '../form/OvertimeForm';
+import { OvertimeUsagePanel } from '../form/OvertimeUsagePanel';
 
 interface OvertimeDrawerProps {
   open: boolean;
@@ -31,6 +37,38 @@ function toFormValues(overtime: Overtime | null, defaultDate?: string): Overtime
   };
 }
 
+/** Hours between two "HH:mm" values, or 0 while the range is incomplete or backwards. */
+function rangeHours(startTime: string, endTime: string): number {
+  if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) return 0;
+  return Math.max(0, timeToMinutes(endTime) - timeToMinutes(startTime)) / 60;
+}
+
+function OvertimeHistory({ overtimeId }: { overtimeId: string }) {
+  const query = useOvertimeAuditLogsQuery({ overtimeId });
+  const logs = query.data?.pages.flatMap((page) => page.items) ?? [];
+
+  return (
+    <section className="space-y-2 border-t pt-4">
+      <h3 className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <History className="size-3.5" />
+        History
+      </h3>
+      {query.isLoading ? (
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      ) : logs.length === 0 ? (
+        // Entries registered before the log existed have no history.
+        <p className="text-xs text-muted-foreground">No recorded changes.</p>
+      ) : (
+        <ul className="space-y-3">
+          {logs.map((log) => (
+            <OvertimeAuditItem key={log.id} log={log} compact />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function OvertimeDrawer({
   open,
   onOpenChange,
@@ -41,8 +79,17 @@ export function OvertimeDrawer({
   onDelete,
   isDeleting,
 }: OvertimeDrawerProps) {
+  const { data: rules } = useOvertimeRulesQuery();
+  // Read through a ref so the schema — and the resolver the form was created
+  // with — sees the rules once they arrive without being rebuilt.
+  const rulesRef = useRef(rules);
+  useEffect(() => {
+    rulesRef.current = rules;
+  }, [rules]);
+  const schema = useMemo(() => createOvertimeSchema((date) => windowFor(date, rulesRef.current)), []);
+
   const form = useForm<OvertimeFormValues>({
-    resolver: zodResolver(overtimeSchema),
+    resolver: zodResolver(schema),
     defaultValues: OVERTIME_EMPTY,
     mode: 'onChange',
   });
@@ -50,6 +97,11 @@ export function OvertimeDrawer({
   useEffect(() => {
     if (open) form.reset(toFormValues(editing, defaultDate));
   }, [open, editing, defaultDate, form]);
+
+  const [date, startTime, endTime] = useWatch({ control: form.control, name: ['date', 'startTime', 'endTime'] });
+
+  // A closed month cannot be left (the stored date) or entered (the chosen one).
+  const locked = (editing ? isDateLocked(editing.date, rules) : false) || isDateLocked(date, rules);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -63,11 +115,19 @@ export function OvertimeDrawer({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-1 flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-4">
-              <OvertimeForm control={form.control} />
+            <div className="flex-1 space-y-4 overflow-y-auto px-4 pb-4">
+              <OvertimeForm control={form.control} rules={rules} />
+              {!locked && (
+                <OvertimeUsagePanel
+                  date={date}
+                  entryHours={rangeHours(startTime, endTime)}
+                  editing={editing ? { date: editing.date, hours: editing.hours } : null}
+                />
+              )}
+              {editing && open && <OvertimeHistory overtimeId={editing.id} />}
             </div>
             <SheetFooter>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || locked}>
                 {isSubmitting && <Loader2 className="size-4 animate-spin" />}
                 {editing ? 'Save changes' : 'Register overtime'}
               </Button>
@@ -77,7 +137,7 @@ export function OvertimeDrawer({
                   variant="outline"
                   className="text-destructive hover:text-destructive"
                   onClick={onDelete}
-                  disabled={isDeleting || isSubmitting}
+                  disabled={isDeleting || isSubmitting || isDateLocked(editing.date, rules)}
                 >
                   {isDeleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
                   Delete

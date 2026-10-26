@@ -6,9 +6,14 @@ import { userColor } from '@/features/overtime/utils/userColor';
 import { OvertimeBar, type OvertimeBarProps } from '@/features/overtime/components/OvertimeBar';
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 import { timeToMinutes } from '@/features/overtime/utils/period';
-import { OVERTIME_DOMAIN } from '@/features/overtime/utils/timeDomain';
+import { buildTimeDomain, formatTick } from '@/features/overtime/utils/timeDomain';
+import { isDateLocked, windowFor } from '@/features/overtime/utils/rules';
+import { useOvertimeRulesQuery } from '@/features/overtime/hooks/queries/useOvertimeRulesQuery';
+import { OvertimeDayBadges } from '@/features/overtime/components/OvertimeDayBadges';
 
 interface OvertimeDayTimelineProps {
+  /** The day shown, YYYY-MM-DD — its type decides the hour axis. */
+  date: string;
   overtimes: Overtime[];
   currentUserId?: string;
   onSelect?: (overtime: Overtime) => void;
@@ -16,6 +21,7 @@ interface OvertimeDayTimelineProps {
 }
 
 export function OvertimeDayTimeline({
+  date,
   overtimes,
   currentUserId,
   onSelect,
@@ -30,20 +36,24 @@ export function OvertimeDayTimeline({
     });
   }, [overtimes, currentUserId]);
 
-  const { start: domainStart, span, hourTicks } = OVERTIME_DOMAIN;
+  const { data: rules } = useOvertimeRulesQuery();
+  const allowed = windowFor(date, rules);
+  const locked = isDateLocked(date, rules);
+  const { start: domainStart, span, hourTicks } = useMemo(() => buildTimeDomain(allowed), [allowed]);
   const percent = (minutes: number) => ((minutes - domainStart) / span) * 100;
-  const formatTick = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:00`;
 
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
-        No one registered overtime on this day.
+        <OvertimeDayBadges date={date} rules={rules} className="mb-2 justify-center" />
+        <p>No one registered overtime on this day.</p>
       </div>
     );
   }
 
   return (
     <div className="rounded-xl border bg-card p-4">
+      <OvertimeDayBadges date={date} rules={rules} className="mb-3" />
       <div className="flex">
         <div className="w-80 shrink-0" />
         <div className="relative h-5 flex-1">
@@ -93,6 +103,7 @@ export function OvertimeDayTimeline({
                   isMine={isMine}
                   domainStart={domainStart}
                   domainSpan={span}
+                  locked={locked}
                   onSelect={onSelect}
                   onResize={onResize}
                 />
@@ -108,7 +119,7 @@ export function OvertimeDayTimeline({
         </span>
         <span>
           Each colour is a person · click a bar to edit · drag either end of your own bar to adjust it
-          in 5-minute steps · overtime runs 17:00–22:00
+          in 5-minute steps · overtime on this day runs {allowed.start}–{allowed.end}
         </span>
       </div>
     </div>

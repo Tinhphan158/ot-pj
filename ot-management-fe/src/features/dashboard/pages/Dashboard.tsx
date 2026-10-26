@@ -14,6 +14,10 @@ import { DashboardPersonalStats } from '@/features/dashboard/components/Dashboar
 import { DashboardStats } from '@/features/dashboard/components/DashboardStats';
 import { DashboardTrendChart } from '@/features/dashboard/components/DashboardTrendChart';
 import { DashboardTopMembers } from '@/features/dashboard/components/DashboardTopMembers';
+import { DashboardMemberFilter } from '@/features/dashboard/components/DashboardMemberFilter';
+import { useUsersQuery } from '@/features/dashboard/hooks/queries/useUsersQuery';
+import { OvertimeExportButton } from '@/features/overtime/components/OvertimeExportButton';
+import { OvertimeLimitBanner } from '@/features/overtime/components/OvertimeLimitBanner';
 
 const TREND_COPY: Record<DashboardPeriod, { title: string; description: string }> = {
   week: { title: 'OT hours by day', description: 'Company-wide OT hours for each day of the week.' },
@@ -25,12 +29,16 @@ export default function Dashboard() {
   const currentUser = useCurrentUser();
   const [period, setPeriod] = useState<DashboardPeriod>('month');
   const [anchor, setAnchor] = useState(() => new Date());
+  // Another member to look at; undefined shows the signed-in user's own numbers.
+  const [memberId, setMemberId] = useState<string | undefined>(undefined);
+  const { data: users } = useUsersQuery();
+  const member = memberId ? users?.find((user) => user.id === memberId) : undefined;
 
   // Realtime: any create/update/delete by anyone refreshes these numbers.
   useOvertimeRealtime();
 
   const { from, to } = useMemo(() => getRange(period, anchor), [period, anchor]);
-  const query = useDashboardQuery(from, to);
+  const query = useDashboardQuery(from, to, memberId);
   const stats = query.data;
 
   const trend = useMemo(() => buildTrend(period, anchor, stats?.daily ?? []), [period, anchor, stats?.daily]);
@@ -43,7 +51,15 @@ export default function Dashboard() {
         onPeriodChange={setPeriod}
         onShift={(delta) => setAnchor((prev) => shiftAnchor(period, prev, delta))}
         onToday={() => setAnchor(new Date())}
+        actions={
+          <>
+            <DashboardMemberFilter value={memberId} currentUserId={currentUser?.id} onChange={setMemberId} />
+            <OvertimeExportButton from={from} to={to} userId={memberId} />
+          </>
+        }
       />
+
+      <OvertimeLimitBanner className="mb-4" />
 
       {query.isLoading || !stats ? (
         <div className="animate-in fade-in flex min-h-[320px] items-center justify-center rounded-xl border bg-card duration-300">
@@ -64,8 +80,15 @@ export default function Dashboard() {
           )}
         >
           <section className="animate-in fade-in slide-in-from-bottom-2 flex flex-col gap-2 duration-500 ease-out">
-            <h2 className="text-sm font-medium text-muted-foreground">Your overtime</h2>
-            <DashboardPersonalStats stats={stats} currentUserId={currentUser?.id} />
+            <h2 className="text-sm font-medium text-muted-foreground">
+              {member ? `${member.name}'s overtime` : 'Your overtime'}
+            </h2>
+            <DashboardPersonalStats
+              stats={stats}
+              period={period}
+              subjectId={memberId ?? currentUser?.id}
+              isSelf={!memberId}
+            />
           </section>
 
           <section className="animate-in fade-in slide-in-from-bottom-2 flex flex-col gap-2 delay-75 duration-500 ease-out">
@@ -77,7 +100,9 @@ export default function Dashboard() {
             <div className="lg:col-span-2">
               <DashboardTrendChart
                 title={TREND_COPY[period].title}
-                description={TREND_COPY[period].description}
+                description={
+                  member ? `${member.name} only — ${TREND_COPY[period].description}` : TREND_COPY[period].description
+                }
                 data={trend}
               />
             </div>
