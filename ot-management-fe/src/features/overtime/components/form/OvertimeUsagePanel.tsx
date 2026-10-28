@@ -11,10 +11,6 @@ import { usageLevel, type UsageLevel } from '@/features/overtime/utils/usage';
 interface OvertimeUsagePanelProps {
   /** The day being registered; picks which OT month and year to report. */
   date: string;
-  /** Hours of the entry as currently filled in. */
-  entryHours: number;
-  /** When editing, the stored entry — its hours are already inside `registered`. */
-  editing?: { date: string; hours: number } | null;
 }
 
 const BAR_CLASS: Record<UsageLevel, string> = {
@@ -29,21 +25,8 @@ const TEXT_CLASS: Record<UsageLevel, string> = {
   over: 'text-destructive',
 };
 
-function UsageRow({
-  label,
-  period,
-  entryHours,
-  editing,
-}: {
-  label: string;
-  period: OvertimeUsagePeriod;
-  entryHours: number;
-  editing?: { date: string; hours: number } | null;
-}) {
-  // An entry being edited is already counted; swap its stored hours for the new
-  // ones — but only if it sits in this period, or it was never counted here.
-  const counted = editing && editing.date >= period.from && editing.date < period.to ? editing.hours : 0;
-  const after = Math.max(0, period.registered - counted + entryHours);
+function UsageRow({ label, period }: { label: string; period: OvertimeUsagePeriod }) {
+  const after = period.registered;
   const level = usageLevel(after, period.limit);
   const lastDay = addDays(parseDateStr(period.to), -1);
 
@@ -63,8 +46,8 @@ function UsageRow({
       </div>
       <p className={cn('text-xs', TEXT_CLASS[level])}>
         {level === 'over'
-          ? `Over the limit by ${formatHours(after - period.limit)} — the server will reject this entry.`
-          : `${formatHours(period.limit - after)} left after this entry`}
+          ? `Over the limit by ${formatHours(after - period.limit)}`
+          : `${formatHours(period.limit - after)} left`}
         <span className="text-muted-foreground">
           {' '}
           · {formatDate(parseDateStr(period.from), 'dd/MM')} – {formatDate(lastDay, 'dd/MM/yyyy')}
@@ -75,11 +58,10 @@ function UsageRow({
 }
 
 /**
- * The user's standing against the monthly and yearly caps with the entry being
- * filled in already added, so the limit is visible before saving rather than
- * only as a rejection afterwards.
+ * The user's standing against the monthly and yearly caps, counting only hours
+ * already registered — the entry being filled in is not added.
  */
-export function OvertimeUsagePanel({ date, entryHours, editing }: OvertimeUsagePanelProps) {
+export function OvertimeUsagePanel({ date }: OvertimeUsagePanelProps) {
   const query = useOvertimeUsageQuery(date || undefined);
 
   if (!date) return null;
@@ -92,8 +74,8 @@ export function OvertimeUsagePanel({ date, entryHours, editing }: OvertimeUsageP
       </div>
       {query.data ? (
         <>
-          <UsageRow label="This OT month" period={query.data.monthly} entryHours={entryHours} editing={editing} />
-          <UsageRow label="This OT year" period={query.data.yearly} entryHours={entryHours} editing={editing} />
+          <UsageRow label="This OT month" period={query.data.monthly} />
+          <UsageRow label="This OT year" period={query.data.yearly} />
         </>
       ) : query.isError ? (
         <p className="text-xs text-muted-foreground">Could not load your remaining hours.</p>

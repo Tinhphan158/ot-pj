@@ -12,7 +12,6 @@ import { OVERTIME_EMPTY, createOvertimeSchema, type OvertimeFormValues } from '@
 import { useOvertimeRulesQuery } from '@/features/overtime/hooks/queries/useOvertimeRulesQuery';
 import { useOvertimeAuditLogsQuery } from '@/features/overtime/hooks/queries/useOvertimeAuditLogsQuery';
 import { isDateLocked, windowFor } from '@/features/overtime/utils/rules';
-import { timeToMinutes } from '@/features/overtime/utils/period';
 import { OvertimeAuditItem } from '../audit/OvertimeAuditItem';
 import { OvertimeForm } from '../form/OvertimeForm';
 import { OvertimeUsagePanel } from '../form/OvertimeUsagePanel';
@@ -35,12 +34,6 @@ function toFormValues(overtime: Overtime | null, defaultDate?: string): Overtime
     startTime: overtime.startTime,
     endTime: overtime.endTime,
   };
-}
-
-/** Hours between two "HH:mm" values, or 0 while the range is incomplete or backwards. */
-function rangeHours(startTime: string, endTime: string): number {
-  if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) return 0;
-  return Math.max(0, timeToMinutes(endTime) - timeToMinutes(startTime)) / 60;
 }
 
 function OvertimeHistory({ overtimeId }: { overtimeId: string }) {
@@ -98,7 +91,7 @@ export function OvertimeDrawer({
     if (open) form.reset(toFormValues(editing, defaultDate));
   }, [open, editing, defaultDate, form]);
 
-  const [date, startTime, endTime] = useWatch({ control: form.control, name: ['date', 'startTime', 'endTime'] });
+  const date = useWatch({ control: form.control, name: 'date' });
 
   // A closed month cannot be left (the stored date) or entered (the chosen one).
   const locked = (editing ? isDateLocked(editing.date, rules) : false) || isDateLocked(date, rules);
@@ -118,11 +111,7 @@ export function OvertimeDrawer({
             <div className="flex-1 space-y-4 overflow-y-auto px-4 pb-4">
               <OvertimeForm control={form.control} rules={rules} />
               {!locked && (
-                <OvertimeUsagePanel
-                  date={date}
-                  entryHours={rangeHours(startTime, endTime)}
-                  editing={editing ? { date: editing.date, hours: editing.hours } : null}
-                />
+                <OvertimeUsagePanel date={date} />
               )}
               {editing && open && <OvertimeHistory overtimeId={editing.id} />}
             </div>
