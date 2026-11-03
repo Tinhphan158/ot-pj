@@ -34,7 +34,37 @@ export function useOvertimeActions() {
   const updateMutation = useUpdateOvertimeMutation();
   const deleteMutation = useDeleteOvertimeMutation();
 
-  const openCreate = (date?: string) => {
+  /**
+   * Company-wide entries registered on `date`. Uses the same cache key as the
+   * Day view, so it is usually free.
+   */
+  const fetchEntriesOnDay = (date: string): Promise<Overtime[]> => {
+    const to = toDateStr(addDays(parseDateStr(date), 1));
+    return queryClient.fetchQuery({
+      queryKey: overtimeKeys.range(date, to),
+      queryFn: () => overtimeService.findByRange(date, to),
+    });
+  };
+
+  /**
+   * Register on `date` — unless you already have overtime that day, in which
+   * case the drawer opens on your (earliest) entry to edit instead.
+   */
+  const openCreate = async (date?: string) => {
+    if (date && currentUser) {
+      try {
+        const mine = (await fetchEntriesOnDay(date))
+          .filter((o) => o.userId === currentUser.id)
+          .sort((a, b) => a.startTime.localeCompare(b.startTime));
+        if (mine.length > 0) {
+          setEditing(mine[0]);
+          setDrawerOpen(true);
+          return;
+        }
+      } catch {
+        // The lookup is a convenience; fall through to a blank registration.
+      }
+    }
     setEditing(null);
     setDefaultDate(date);
     setDrawerOpen(true);
@@ -109,18 +139,8 @@ export function useOvertimeActions() {
     if (!open) setEditing(null);
   };
 
-  /**
-   * Company-wide number of entries already registered on `date`. Uses the same
-   * cache key as the Day view, so it is usually free.
-   */
-  const countEntriesOnDay = async (date: string): Promise<number> => {
-    const to = toDateStr(addDays(parseDateStr(date), 1));
-    const items = await queryClient.fetchQuery({
-      queryKey: overtimeKeys.range(date, to),
-      queryFn: () => overtimeService.findByRange(date, to),
-    });
-    return items.length;
-  };
+  /** Company-wide number of entries already registered on `date`. */
+  const countEntriesOnDay = async (date: string): Promise<number> => (await fetchEntriesOnDay(date)).length;
 
   const createOvertime = async (values: OvertimeFormValues) => {
     try {
