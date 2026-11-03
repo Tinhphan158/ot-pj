@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, type MouseEvent } from 'react';
+import { Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
@@ -8,12 +9,35 @@ import { addDays, isSameDay, monthCycle, toDateStr } from '@/features/overtime/u
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 import { holidayName, isDateLocked } from '@/features/overtime/utils/rules';
 import { useOvertimeRulesQuery } from '@/features/overtime/hooks/queries/useOvertimeRulesQuery';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu';
 
 interface OvertimeMonthViewProps {
   overtimes: Overtime[];
   monthAnchor: Date;
   currentUserId?: string;
+  /** Left click on a cell that already has overtime. */
   onSelectDay: (date: string) => void;
+  /** Left click on an empty cell — register overtime on that day. */
+  onCreate: (date: string) => void;
+  onEdit: (overtime: Overtime) => void;
+  onDelete: (overtime: Overtime) => void;
+}
+
+/** The right-click menu: where it opens and the cell it belongs to. */
+interface CellMenu {
+  x: number;
+  y: number;
+  date: string;
+  entries: Overtime[];
+  mine: boolean;
+  locked: boolean;
 }
 
 interface UserRow {
@@ -24,7 +48,16 @@ interface UserRow {
   email: string;
 }
 
-export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSelectDay }: OvertimeMonthViewProps) {
+export function OvertimeMonthView({
+  overtimes,
+  monthAnchor,
+  currentUserId,
+  onSelectDay,
+  onCreate,
+  onEdit,
+  onDelete,
+}: OvertimeMonthViewProps) {
+  const [menu, setMenu] = useState<CellMenu | null>(null);
   const { labelMonth, labelYear } = monthCycle(monthAnchor);
   const { data: rules } = useOvertimeRulesQuery();
   // Columns span the OT cycle (21st of prev month → 20th of the label month).
@@ -35,9 +68,10 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
     return arr;
   }, [monthAnchor]);
 
-  const { rows, cellMap, maxHours } = useMemo(() => {
+  const { rows, cellMap, entryMap, maxHours } = useMemo(() => {
     const userMap = new Map<string, UserRow>();
     const cells = new Map<string, number>(); // `${userId}|${day}` -> hours
+    const entries = new Map<string, Overtime[]>(); // same key -> that day's entries
     let max = 0;
 
     for (const o of overtimes) {
@@ -51,12 +85,14 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
       const key = `${o.userId}|${day}`;
       const next = (cells.get(key) ?? 0) + o.hours;
       cells.set(key, next);
+      entries.set(key, [...(entries.get(key) ?? []), o]);
       if (next > max) max = next;
     }
 
     // Most overtime first; the "You" row is found by its highlight, not by position.
     const list = [...userMap.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
-    return { rows: list, cellMap: cells, maxHours: max };
+    for (const list of entries.values()) list.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    return { rows: list, cellMap: cells, entryMap: entries, maxHours: max };
   }, [overtimes]);
 
   const today = new Date();
@@ -68,6 +104,18 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
       </div>
     );
   }
+
+  const openMenu = (event: MouseEvent, rowId: string, date: string, entries: Overtime[]) => {
+    event.preventDefault();
+    setMenu({
+      x: event.clientX,
+      y: event.clientY,
+      date,
+      entries,
+      mine: rowId === currentUserId,
+      locked: isDateLocked(date, rules),
+    });
+  };
 
   const cellStyle = (hours: number) => {
     if (hours <= 0) return undefined;
@@ -142,13 +190,16 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
                   </td>
                   {days.map((day) => {
                     const dateStr = toDateStr(day);
-                    const hours = cellMap.get(`${row.id}|${day.getDate()}`) ?? 0;
+                    const key = `${row.id}|${day.getDate()}`;
+                    const hours = cellMap.get(key) ?? 0;
+                    const entries = entryMap.get(key) ?? [];
                     return (
                       <td key={dateStr} className="border-b p-0.5 text-center">
                         <button
                           type="button"
-                          onClick={() => onSelectDay(dateStr)}
-                          title={hours > 0 ? `${row.name} · ${dateStr} · ${formatHours(hours)}` : dateStr}
+                          onClick={() => (hours > 0 ? onSelectDay(dateStr) : onCreate(dateStr))}
+                          onContextMenu={(event) => openMenu(event, row.id, dateStr, entries)}
+                          title={hours > 0 ? `${row.name} · ${dateStr} · ${formatHours(hours)}` : `${dateStr} · click to register overtime`}
                           className="flex h-7 w-full items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors hover:ring-1 hover:ring-primary"
                           style={cellStyle(hours)}
                         >
@@ -176,11 +227,81 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
           <span className="size-3 rounded bg-rose-500/30" />
           Public holiday
         </span>
-        <span>Click a cell to see that day&apos;s detail</span>
+        <span>Click a cell to see that day&apos;s detail, or an empty one to register · right-click for edit/delete</span>
         {rules && days.length > 0 && isDateLocked(toDateStr(days[0]), rules) && (
           <span className="font-medium">This OT month is closed — entries can no longer be changed</span>
         )}
       </div>
+
+      {/* One menu for the whole grid, anchored to an invisible point at the cursor. */}
+      <DropdownMenu open={menu !== null} onOpenChange={(open) => !open && setMenu(null)}>
+        <DropdownMenuTrigger asChild>
+          <span aria-hidden className="pointer-events-none fixed size-0" style={{ left: menu?.x, top: menu?.y }} />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" sideOffset={2} className="min-w-44">
+          {menu && <CellMenuItems menu={menu} onCreate={onCreate} onEdit={onEdit} onDelete={onDelete} />}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
+  );
+}
+
+function CellMenuItems({
+  menu,
+  onCreate,
+  onEdit,
+  onDelete,
+}: {
+  menu: CellMenu;
+  onCreate: (date: string) => void;
+  onEdit: (overtime: Overtime) => void;
+  onDelete: (overtime: Overtime) => void;
+}) {
+  const canChange = menu.mine && !menu.locked;
+  const reason = menu.locked ? 'OT month is closed' : !menu.mine ? 'Only the owner can change this' : null;
+
+  if (menu.entries.length === 0) {
+    return (
+      <>
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{menu.date}</DropdownMenuLabel>
+        <DropdownMenuItem onSelect={() => onCreate(menu.date)}>
+          <Plus />
+          Register overtime
+        </DropdownMenuItem>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {menu.entries.map((entry, i) => (
+        <div key={entry.id}>
+          {i > 0 && <DropdownMenuSeparator />}
+          {/* Several entries on one day: label each so it is clear which one is being changed. */}
+          {menu.entries.length > 1 && (
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+              {entry.startTime}–{entry.endTime}
+            </DropdownMenuLabel>
+          )}
+          <DropdownMenuItem disabled={!canChange} onSelect={() => onEdit(entry)}>
+            <Pencil />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" disabled={!canChange} onSelect={() => onDelete(entry)}>
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </div>
+      ))}
+      {reason && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+            <Lock className="size-3" />
+            {reason}
+          </DropdownMenuLabel>
+        </>
+      )}
+    </>
   );
 }

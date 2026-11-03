@@ -139,15 +139,25 @@ export function useOvertimeActions() {
     if (!open) setCrowdedDay(null);
   };
 
-  const handleDelete = async () => {
-    if (!editing) return;
+  /** Delete without going through the drawer. Resolves to whether it went through. */
+  const deleteOvertime = async (overtime: Overtime): Promise<boolean> => {
+    if (overtime.userId !== currentUser?.id) {
+      notify({ type: 'info', title: 'Only the owner can delete this', description: 'This overtime entry belongs to someone else.' });
+      return false;
+    }
     try {
-      await deleteMutation.mutateAsync(editing.id);
+      await deleteMutation.mutateAsync(overtime.id);
       notify({ type: 'success', title: 'Overtime deleted' });
-      handleDrawerOpenChange(false);
+      return true;
     } catch (error) {
       notify({ type: 'error', title: 'Could not delete overtime', description: getErrorMessage(error) });
+      return false;
     }
+  };
+
+  const handleDelete = async () => {
+    if (!editing) return;
+    if (await deleteOvertime(editing)) handleDrawerOpenChange(false);
   };
 
   return {
@@ -163,6 +173,7 @@ export function useOvertimeActions() {
     handleCrowdedDayConfirm,
     handleCrowdedDayOpenChange,
     handleDelete,
+    deleteOvertime,
     isSubmitting: createMutation.isPending || updateMutation.isPending || isCheckingDay,
     isDeleting: deleteMutation.isPending,
   };

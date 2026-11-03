@@ -8,6 +8,7 @@ import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/utils/cn';
 import { isPayday } from '@/shared/utils/payday';
 import { PaydayDialog } from '@/shared/components/layout/AppPaydayDialog';
+import { CalendarMonthPicker } from '@/features/calendar/components/CalendarMonthPicker';
 import { MONTH_NAMES, weekdayName } from '@/shared/utils/format';
 import {
   auspiciousHours,
@@ -98,7 +99,6 @@ export default function LunarCalendar() {
   const selectedHoliday = holidayName(toDateStr(selected), rules);
   const selectedPayday = isPayday(selected);
   const term = solarTerm(selectedLunar.jd);
-  const yearOptions = Array.from({ length: 41 }, (_, i) => today.getFullYear() - 20 + i);
 
   const upcoming = monthCells.filter((cell) => cell.events.length > 0 || cell.holiday || cell.payday);
 
@@ -138,30 +138,7 @@ export default function LunarCalendar() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <select
-                aria-label="Month"
-                value={monthAnchor.getMonth()}
-                onChange={(e) => setMonthAnchor(new Date(monthAnchor.getFullYear(), Number(e.target.value), 1))}
-                className="h-8 rounded-md border bg-background px-2 text-sm dark:bg-input/30"
-              >
-                {MONTH_NAMES.map((name, i) => (
-                  <option key={name} value={i}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Year"
-                value={monthAnchor.getFullYear()}
-                onChange={(e) => setMonthAnchor(new Date(Number(e.target.value), monthAnchor.getMonth(), 1))}
-                className="h-8 rounded-md border bg-background px-2 text-sm dark:bg-input/30"
-              >
-                {yearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
+              <CalendarMonthPicker value={monthAnchor} onChange={setMonthAnchor} />
               <Button variant="outline" size="sm" onClick={goToday}>
                 Today
               </Button>

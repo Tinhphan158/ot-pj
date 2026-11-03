@@ -37,7 +37,7 @@ export function AppPaydayDialog({ userId }: { userId: string }) {
 export function PaydayDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm overflow-hidden text-center">
+      <DialogContent className="light max-w-sm overflow-hidden bg-background text-center text-foreground [color-scheme:light]">
         {/* Falling money behind the content. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           {MONEY.map((emoji, i) => (
