@@ -9,6 +9,8 @@ import { timeToMinutes } from '@/features/overtime/utils/period';
 
 /** Same 5-minute grain as dragging a bar in the Day/Week views. */
 const STEP_MINUTES = 5;
+/** The slider stops at 21:00; a later end can still be typed into the field. */
+const SLIDER_MAX_MINUTES = 21 * 60;
 
 function minutesToTime(minutes: number): string {
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
@@ -30,7 +32,7 @@ export function OvertimeTimeRangeSlider({ control, window, disabled }: OvertimeT
   const { field: end } = useController({ control, name: 'endTime' });
 
   const min = timeToMinutes(window.start);
-  const max = timeToMinutes(window.end);
+  const max = Math.min(timeToMinutes(window.end), SLIDER_MAX_MINUTES);
   const clamp = (value: number) => Math.min(max, Math.max(min, value));
 
   // Half-typed or out-of-window values are pinned to the edges for display only.
