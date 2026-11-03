@@ -30,8 +30,13 @@ export function AppPaydayDialog({ userId }: { userId: string }) {
     setOpen(true);
   }, [userId]);
 
+  return <PaydayDialog open={open} onOpenChange={setOpen} />;
+}
+
+/** The payday celebration itself, controlled — also opened from a payday in the lunar calendar. */
+export function PaydayDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm overflow-hidden text-center">
         {/* Falling money behind the content. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -60,7 +65,7 @@ export function AppPaydayDialog({ userId }: { userId: string }) {
 
         <p className="relative text-sm text-muted-foreground">Chúc mừng ngày lương — tháng này vất vả rồi!</p>
 
-        <Button className="relative w-full" onClick={() => setOpen(false)}>
+        <Button className="relative w-full" onClick={() => onOpenChange(false)}>
           Tuyệt vời 🎉
         </Button>
       </DialogContent>
