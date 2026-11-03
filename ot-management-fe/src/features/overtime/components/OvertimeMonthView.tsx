@@ -9,6 +9,7 @@ import { addDays, isSameDay, monthCycle, toDateStr } from '@/features/overtime/u
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 import { holidayName, isDateLocked } from '@/features/overtime/utils/rules';
 import { useOvertimeRulesQuery } from '@/features/overtime/hooks/queries/useOvertimeRulesQuery';
+import { useCurrentUser } from '@/features/auth/store/auth.store';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,9 +23,7 @@ interface OvertimeMonthViewProps {
   overtimes: Overtime[];
   monthAnchor: Date;
   currentUserId?: string;
-  /** Left click on a cell that already has overtime. */
-  onSelectDay: (date: string) => void;
-  /** Left click on an empty cell — register overtime on that day. */
+  /** Click on an empty cell of your own row — register overtime on that day. */
   onCreate: (date: string) => void;
   onEdit: (overtime: Overtime) => void;
   onDelete: (overtime: Overtime) => void;
@@ -36,7 +35,6 @@ interface CellMenu {
   y: number;
   date: string;
   entries: Overtime[];
-  mine: boolean;
   locked: boolean;
 }
 
@@ -52,12 +50,12 @@ export function OvertimeMonthView({
   overtimes,
   monthAnchor,
   currentUserId,
-  onSelectDay,
   onCreate,
   onEdit,
   onDelete,
 }: OvertimeMonthViewProps) {
   const [menu, setMenu] = useState<CellMenu | null>(null);
+  const currentUser = useCurrentUser();
   const { labelMonth, labelYear } = monthCycle(monthAnchor);
   const { data: rules } = useOvertimeRulesQuery();
   // Columns span the OT cycle (21st of prev month → 20th of the label month).
@@ -89,11 +87,22 @@ export function OvertimeMonthView({
       if (next > max) max = next;
     }
 
+    // Only your own row is clickable, so keep it on the grid even before your first entry this month.
+    if (currentUser && currentUser.id === currentUserId && !userMap.has(currentUser.id)) {
+      userMap.set(currentUser.id, {
+        id: currentUser.id,
+        name: currentUser.name,
+        email: currentUser.email,
+        avatar: currentUser.avatar,
+        total: 0,
+      });
+    }
+
     // Most overtime first; the "You" row is found by its highlight, not by position.
     const list = [...userMap.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
     for (const list of entries.values()) list.sort((a, b) => a.startTime.localeCompare(b.startTime));
     return { rows: list, cellMap: cells, entryMap: entries, maxHours: max };
-  }, [overtimes]);
+  }, [overtimes, currentUser, currentUserId]);
 
   const today = new Date();
 
@@ -105,16 +114,16 @@ export function OvertimeMonthView({
     );
   }
 
-  const openMenu = (event: MouseEvent, rowId: string, date: string, entries: Overtime[]) => {
+  const openMenu = (event: MouseEvent, date: string, entries: Overtime[]) => {
     event.preventDefault();
-    setMenu({
-      x: event.clientX,
-      y: event.clientY,
-      date,
-      entries,
-      mine: rowId === currentUserId,
-      locked: isDateLocked(date, rules),
-    });
+    setMenu({ x: event.clientX, y: event.clientY, date, entries, locked: isDateLocked(date, rules) });
+  };
+
+  /** Own cells only: empty registers, one entry edits, several let you pick which. */
+  const handleOwnCellClick = (event: MouseEvent, date: string, entries: Overtime[]) => {
+    if (entries.length === 0) onCreate(date);
+    else if (entries.length === 1) onEdit(entries[0]);
+    else openMenu(event, date, entries);
   };
 
   const cellStyle = (hours: number) => {
@@ -193,18 +202,35 @@ export function OvertimeMonthView({
                     const key = `${row.id}|${day.getDate()}`;
                     const hours = cellMap.get(key) ?? 0;
                     const entries = entryMap.get(key) ?? [];
+                    const label = hours > 0 ? formatHours(hours) : '';
+                    const cellClass = 'flex h-7 w-full items-center justify-center rounded text-[10px] font-medium tabular-nums';
                     return (
                       <td key={dateStr} className="border-b p-0.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => (hours > 0 ? onSelectDay(dateStr) : onCreate(dateStr))}
-                          onContextMenu={(event) => openMenu(event, row.id, dateStr, entries)}
-                          title={hours > 0 ? `${row.name} · ${dateStr} · ${formatHours(hours)}` : `${dateStr} · click to register overtime`}
-                          className="flex h-7 w-full items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors hover:ring-1 hover:ring-primary"
-                          style={cellStyle(hours)}
-                        >
-                          {hours > 0 ? formatHours(hours) : ''}
-                        </button>
+                        {mine ? (
+                          <button
+                            type="button"
+                            onClick={(event) => handleOwnCellClick(event, dateStr, entries)}
+                            onContextMenu={(event) => openMenu(event, dateStr, entries)}
+                            title={
+                              hours > 0
+                                ? `${dateStr} · ${formatHours(hours)} · click to edit, right-click for more`
+                                : `${dateStr} · click to register overtime`
+                            }
+                            className={cn(cellClass, 'cursor-pointer transition-colors hover:ring-1 hover:ring-primary')}
+                            style={cellStyle(hours)}
+                          >
+                            {label}
+                          </button>
+                        ) : (
+                          // Someone else's day: shown for reference, not clickable.
+                          <div
+                            title={hours > 0 ? `${row.name} · ${dateStr} · ${formatHours(hours)}` : undefined}
+                            className={cn(cellClass, 'cursor-default')}
+                            style={cellStyle(hours)}
+                          >
+                            {label}
+                          </div>
+                        )}
                       </td>
                     );
                   })}
@@ -227,7 +253,7 @@ export function OvertimeMonthView({
           <span className="size-3 rounded bg-rose-500/30" />
           Public holiday
         </span>
-        <span>Click a cell to see that day&apos;s detail, or an empty one to register · right-click for edit/delete</span>
+        <span>In your row: click an empty day to register, a filled one to edit · right-click for edit/delete</span>
         {rules && days.length > 0 && isDateLocked(toDateStr(days[0]), rules) && (
           <span className="font-medium">This OT month is closed — entries can no longer be changed</span>
         )}
@@ -257,8 +283,8 @@ function CellMenuItems({
   onEdit: (overtime: Overtime) => void;
   onDelete: (overtime: Overtime) => void;
 }) {
-  const canChange = menu.mine && !menu.locked;
-  const reason = menu.locked ? 'OT month is closed' : !menu.mine ? 'Only the owner can change this' : null;
+  const canChange = !menu.locked;
+  const reason = menu.locked ? 'OT month is closed' : null;
 
   if (menu.entries.length === 0) {
     return (

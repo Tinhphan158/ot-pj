@@ -178,7 +178,6 @@ export default function TeamOvertime() {
           overtimes={items}
           monthAnchor={anchor}
           currentUserId={currentUser?.id}
-          onSelectDay={goToDay}
           onCreate={actions.openCreate}
           onEdit={actions.openEdit}
           onDelete={setPendingDelete}
