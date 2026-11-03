@@ -181,6 +181,7 @@ export default function TeamOvertime() {
           onCreate={actions.openCreate}
           onEdit={actions.openEdit}
           onDelete={setPendingDelete}
+          onMove={actions.moveOvertimes}
         />
       ) : (
         <OvertimeYearView overtimes={items} currentUserId={currentUser?.id} onSelectMonth={goToMonth} />

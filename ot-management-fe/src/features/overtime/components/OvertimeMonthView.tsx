@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type MouseEvent } from 'react';
+import { useMemo, useState, type DragEvent, type MouseEvent } from 'react';
 import { Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
@@ -27,6 +27,8 @@ interface OvertimeMonthViewProps {
   onCreate: (date: string) => void;
   onEdit: (overtime: Overtime) => void;
   onDelete: (overtime: Overtime) => void;
+  /** Drag & drop within your own row: move that day's entries to `date`. */
+  onMove: (overtimes: Overtime[], date: string) => void;
 }
 
 /** The right-click menu: where it opens and the cell it belongs to. */
@@ -53,8 +55,12 @@ export function OvertimeMonthView({
   onCreate,
   onEdit,
   onDelete,
+  onMove,
 }: OvertimeMonthViewProps) {
   const [menu, setMenu] = useState<CellMenu | null>(null);
+  // The own-row cell being dragged, and the day it is hovering over.
+  const [dragFrom, setDragFrom] = useState<{ date: string; entries: Overtime[] } | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
   const currentUser = useCurrentUser();
   const { labelMonth, labelYear } = monthCycle(monthAnchor);
   const { data: rules } = useOvertimeRulesQuery();
@@ -124,6 +130,34 @@ export function OvertimeMonthView({
     if (entries.length === 0) onCreate(date);
     else if (entries.length === 1) onEdit(entries[0]);
     else openMenu(event, date, entries);
+  };
+
+  const endDrag = () => {
+    setDragFrom(null);
+    setDragOver(null);
+  };
+
+  /** A day can take a drop when it is another day in your row and its OT month is still open. */
+  const canDropOn = (date: string) => dragFrom !== null && date !== dragFrom.date && !isDateLocked(date, rules);
+
+  const handleDragStart = (event: DragEvent, date: string, entries: Overtime[]) => {
+    event.dataTransfer.effectAllowed = 'move';
+    // Firefox only starts a drag that carries some data.
+    event.dataTransfer.setData('text/plain', date);
+    setDragFrom({ date, entries });
+  };
+
+  const handleDragOver = (event: DragEvent, date: string) => {
+    if (!canDropOn(date)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    if (dragOver !== date) setDragOver(date);
+  };
+
+  const handleDrop = (event: DragEvent, date: string) => {
+    event.preventDefault();
+    if (dragFrom && canDropOn(date)) onMove(dragFrom.entries, date);
+    endDrag();
   };
 
   const cellStyle = (hours: number) => {
@@ -209,15 +243,27 @@ export function OvertimeMonthView({
                         {mine ? (
                           <button
                             type="button"
+                            draggable={hours > 0 && !isDateLocked(dateStr, rules)}
                             onClick={(event) => handleOwnCellClick(event, dateStr, entries)}
                             onContextMenu={(event) => openMenu(event, dateStr, entries)}
+                            onDragStart={(event) => handleDragStart(event, dateStr, entries)}
+                            onDragEnd={endDrag}
+                            onDragOver={(event) => handleDragOver(event, dateStr)}
+                            onDragLeave={() => dragOver === dateStr && setDragOver(null)}
+                            onDrop={(event) => handleDrop(event, dateStr)}
                             title={
                               hours > 0
-                                ? `${dateStr} · ${formatHours(hours)} · click to edit, right-click for more`
+                                ? `${dateStr} · ${formatHours(hours)} · click to edit, drag to move, right-click for more`
                                 : `${dateStr} · click to register overtime`
                             }
-                            className={cn(cellClass, 'cursor-pointer transition-colors hover:ring-1 hover:ring-primary')}
-                            style={cellStyle(hours)}
+                            className={cn(
+                              cellClass,
+                              'cursor-pointer transition-colors hover:ring-1 hover:ring-primary',
+                              hours > 0 && !isDateLocked(dateStr, rules) && 'cursor-grab active:cursor-grabbing',
+                              dragFrom?.date === dateStr && 'opacity-40',
+                              dragOver === dateStr && 'bg-primary/25 outline-2 outline-offset-1 outline-dashed outline-primary',
+                            )}
+                            style={dragOver === dateStr ? undefined : cellStyle(hours)}
                           >
                             {label}
                           </button>
@@ -253,7 +299,7 @@ export function OvertimeMonthView({
           <span className="size-3 rounded bg-rose-500/30" />
           Public holiday
         </span>
-        <span>In your row: click an empty day to register, a filled one to edit · right-click for edit/delete</span>
+        <span>In your row: click an empty day to register, a filled one to edit · drag to move to another day · right-click for edit/delete</span>
         {rules && days.length > 0 && isDateLocked(toDateStr(days[0]), rules) && (
           <span className="font-medium">This OT month is closed — entries can no longer be changed</span>
         )}

@@ -71,6 +71,39 @@ export function useOvertimeActions() {
     }
   };
 
+  /**
+   * Move a day's entries to another day, keeping their hours (drag & drop in the
+   * month grid). Sent one by one and stops at the first rejection; the server
+   * re-checks ownership, closed months, the day's window, overlaps and limits.
+   */
+  const moveOvertimes = async (overtimes: Overtime[], date: string): Promise<boolean> => {
+    if (overtimes.some((o) => o.userId !== currentUser?.id)) {
+      notify({ type: 'info', title: 'Only the owner can move this', description: 'This overtime entry belongs to someone else.' });
+      return false;
+    }
+
+    let moved = 0;
+    try {
+      for (const overtime of overtimes) {
+        await updateMutation.mutateAsync({ id: overtime.id, payload: { date } });
+        moved++;
+      }
+      notify({
+        type: 'success',
+        title: 'Overtime moved',
+        description: `${overtimes.length > 1 ? `${overtimes.length} entries` : `${overtimes[0].startTime}–${overtimes[0].endTime}`} → ${date}`,
+      });
+      return true;
+    } catch (error) {
+      notify({
+        type: 'error',
+        title: moved > 0 ? `Moved ${moved} of ${overtimes.length} entries` : 'Could not move overtime',
+        description: getErrorMessage(error),
+      });
+      return false;
+    }
+  };
+
   const handleDrawerOpenChange = (open: boolean) => {
     setDrawerOpen(open);
     if (!open) setEditing(null);
@@ -174,6 +207,7 @@ export function useOvertimeActions() {
     handleCrowdedDayOpenChange,
     handleDelete,
     deleteOvertime,
+    moveOvertimes,
     isSubmitting: createMutation.isPending || updateMutation.isPending || isCheckingDay,
     isDeleting: deleteMutation.isPending,
   };
