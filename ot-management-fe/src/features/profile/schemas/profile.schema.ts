@@ -2,13 +2,11 @@ import { z } from 'zod';
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1, 'Please enter your full name').max(120),
-  avatar: z
-    .string()
-    .max(1000)
-    .url('Invalid image URL')
-    .optional()
-    .or(z.literal('')),
 });
+
+/** Mirrors the server's avatar rules (`POST /users/me/avatar`). */
+export const AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+export const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 
 export const changePasswordSchema = z
   .object({

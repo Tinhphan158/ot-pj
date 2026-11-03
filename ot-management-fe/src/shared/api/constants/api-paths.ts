@@ -24,6 +24,7 @@ export const API_PATHS = {
   USERS: {
     BASE: '/users',
     ME: '/users/me',
+    ME_AVATAR: '/users/me/avatar',
     ME_PASSWORD: '/users/me/password',
   },
 } as const;

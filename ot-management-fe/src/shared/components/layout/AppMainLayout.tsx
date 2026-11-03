@@ -9,6 +9,7 @@ import { useCurrentUser, useHasAuthHydrated } from '@/features/auth/store/auth.s
 import { NAV_ITEMS } from './nav-items';
 import { AppSidebarNav, SidebarBrand } from './AppSidebarNav';
 import { AppUserMenu } from './AppUserMenu';
+import { AppPaydayDialog } from './AppPaydayDialog';
 
 export function AppMainLayout({ children }: { children: ReactNode }) {
   const hydrated = useHasAuthHydrated();
@@ -68,6 +69,7 @@ export function AppMainLayout({ children }: { children: ReactNode }) {
         </header>
 
         <main className="flex-1">{children}</main>
+        {user && <AppPaydayDialog userId={user.id} />}
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import { UserModule } from '@/modules/user/user.module';
 import { OvertimeModule } from '@/modules/overtime/overtime.module';
 import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 import { MailModule } from '@/modules/mail/mail.module';
+import { CloudinaryModule } from '@/modules/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MailModule } from '@/modules/mail/mail.module';
     GlobalModule,
     JwtAuthModule,
     MailModule,
+    CloudinaryModule,
     AuthModule,
     UserModule,
     OvertimeModule,

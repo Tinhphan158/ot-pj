@@ -58,6 +58,11 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-OT Management <no-reply@ot.local>}
       OVERTIME_LOCK_GRACE_DAYS: ${OVERTIME_LOCK_GRACE_DAYS:-3}
+      # Avatar uploads (server-side signed). Blank → the upload endpoint refuses.
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-ot-management/avatars}
       RUN_SEED: ${RUN_SEED:-false}
 
   web:

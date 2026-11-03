@@ -16,6 +16,12 @@ export const userService = {
   findAll: () => http.get<User[]>(API_PATHS.USERS.BASE),
   getMe: () => http.get<User>(API_PATHS.USERS.ME),
   updateProfile: (payload: UpdateProfilePayload) => http.patch<User>(API_PATHS.USERS.ME, payload),
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    // Overrides the instance's JSON default so axios sends the multipart body as-is.
+    return http.post<User>(API_PATHS.USERS.ME_AVATAR, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
   changePassword: (payload: ChangePasswordPayload) =>
     http.patch<MessageResponse>(API_PATHS.USERS.ME_PASSWORD, payload),
 };

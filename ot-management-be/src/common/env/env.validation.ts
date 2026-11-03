@@ -19,4 +19,9 @@ export const envValidationSchema = Joi.object({
   [ENV.MAIL_PASSWORD]: Joi.string().allow('').optional(),
   [ENV.MAIL_FROM]: Joi.string().allow('').optional(),
   [ENV.OVERTIME_LOCK_GRACE_DAYS]: Joi.number().integer().min(0).default(3),
+  // Avatar uploads. Optional so the API still boots without them — the upload endpoint then refuses.
+  [ENV.CLOUDINARY_CLOUD_NAME]: Joi.string().allow('').optional(),
+  [ENV.CLOUDINARY_API_KEY]: Joi.string().allow('').optional(),
+  [ENV.CLOUDINARY_API_SECRET]: Joi.string().allow('').optional(),
+  [ENV.CLOUDINARY_FOLDER]: Joi.string().allow('').default('ot-management/avatars'),
 });

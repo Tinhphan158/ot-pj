@@ -161,3 +161,28 @@
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
 }
+
+/* Payday dialog — notes and coins drifting down behind the cat. */
+.payday-money {
+  animation: payday-fall 3.2s linear infinite;
+}
+
+@keyframes payday-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(520px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payday-money {
+    display: none;
+  }
+}

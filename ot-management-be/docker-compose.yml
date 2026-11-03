@@ -48,6 +48,11 @@ services:
       MAIL_USER: ''
       MAIL_PASSWORD: ''
       MAIL_FROM: OT Management <no-reply@ot.local>
+      # Cloudinary avatar uploads — fill in to enable.
+      CLOUDINARY_CLOUD_NAME: ''
+      CLOUDINARY_API_KEY: ''
+      CLOUDINARY_API_SECRET: ''
+      CLOUDINARY_FOLDER: ot-management/avatars
       # Seed demo data on first boot. Set to 'true' if you want demo users/records.
       RUN_SEED: 'false'
 
