@@ -1,6 +1,4 @@
-import type { OvertimeAuditAction } from '@prisma/client';
 import type { OvertimeDayType, OvertimeWindow } from '@/utils';
-import type { OvertimeSnapshot } from './overtime.entity';
 
 export type OvertimeUserSummary = {
   id: string;
@@ -48,20 +46,4 @@ export type OvertimeUsagePeriodDto = {
 export type OvertimeUsageResponseDto = {
   monthly: OvertimeUsagePeriodDto;
   yearly: OvertimeUsagePeriodDto;
-};
-
-export type OvertimeAuditLogResponseDto = {
-  id: string;
-  overtimeId: string;
-  action: OvertimeAuditAction;
-  actor: OvertimeUserSummary | null;
-  before: OvertimeSnapshot | null;
-  after: OvertimeSnapshot | null;
-  createdAt: Date;
-};
-
-export type OvertimeAuditPageResponseDto = {
-  items: OvertimeAuditLogResponseDto[];
-  /** Pass back as `cursor` for the next page; null on the last page. */
-  nextCursor: string | null;
 };

@@ -17,7 +17,6 @@ export const API_PATHS = {
     RANGE: '/overtimes/range',
     RULES: '/overtimes/rules',
     USAGE: '/overtimes/usage',
-    EXPORT: '/overtimes/export',
     DETAIL: (id: string) => `/overtimes/${id}`,
   },
   USERS: {

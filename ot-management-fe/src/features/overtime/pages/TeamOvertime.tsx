@@ -29,7 +29,6 @@ import { OvertimeCrowdedDayDialog } from '@/features/overtime/components/dialog/
 import { OvertimeDeleteDialog } from '@/features/overtime/components/dialog/OvertimeDeleteDialog';
 import type { Overtime } from '@/shared/api';
 import { OvertimeLimitBanner } from '@/features/overtime/components/OvertimeLimitBanner';
-import { OvertimeExportButton } from '@/features/overtime/components/OvertimeExportButton';
 
 const VIEW_OPTIONS: { value: OvertimeView; label: string }[] = [
   { value: 'day', label: 'Day' },
@@ -88,13 +87,10 @@ export default function TeamOvertime() {
         title="Overtime management"
         description="See who is working overtime and during which time slots — pick a day, or browse by week, month or year."
         actions={
-          <div className="flex items-center gap-2">
-            <OvertimeExportButton from={from} to={to} />
-            <Button onClick={() => actions.openCreate(toDateStr(anchor))}>
-              <Plus className="size-4" />
-              Register overtime
-            </Button>
-          </div>
+          <Button onClick={() => actions.openCreate(toDateStr(anchor))}>
+            <Plus className="size-4" />
+            Register overtime
+          </Button>
         }
       />
 

@@ -1,26 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { OvertimeAuditAction, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { DatabaseService } from '@/database/database.service';
-import { toDateString } from '@/utils';
-import {
-  OvertimeAuditLogEntity,
-  OvertimeEntity,
-  OvertimeSnapshot,
-  overtimeAuditLogInclude,
-  overtimeWithUserInclude,
-} from './overtime.entity';
-
-/** What the audit log keeps of an entry — enough to show what it looked like. */
-function snapshot(entity: OvertimeEntity): OvertimeSnapshot {
-  return {
-    userId: entity.userId,
-    userName: entity.user?.name ?? null,
-    date: toDateString(entity.date),
-    startTime: entity.startTime,
-    endTime: entity.endTime,
-    hours: entity.hours,
-  };
-}
+import { OvertimeEntity, overtimeWithUserInclude } from './overtime.entity';
 
 @Injectable()
 export class OvertimeRepository {
@@ -55,61 +36,15 @@ export class OvertimeRepository {
     return result._sum.hours ?? 0;
   }
 
-  // Every write records itself in the audit log inside the same transaction, so
-  // a change can never land without its history (or the other way round).
-
-  create(data: Prisma.OvertimeUncheckedCreateInput, actorId: string): Promise<OvertimeEntity> {
-    return this.db.$transaction(async (tx) => {
-      const entity = await tx.overtime.create({ data, include: overtimeWithUserInclude });
-      await tx.overtimeAuditLog.create({
-        data: { overtimeId: entity.id, actorId, action: OvertimeAuditAction.CREATED, after: snapshot(entity) },
-      });
-      return entity;
-    });
+  create(data: Prisma.OvertimeUncheckedCreateInput): Promise<OvertimeEntity> {
+    return this.db.overtime.create({ data, include: overtimeWithUserInclude });
   }
 
-  update(current: OvertimeEntity, data: Prisma.OvertimeUpdateInput, actorId: string): Promise<OvertimeEntity> {
-    return this.db.$transaction(async (tx) => {
-      const entity = await tx.overtime.update({ where: { id: current.id }, data, include: overtimeWithUserInclude });
-      await tx.overtimeAuditLog.create({
-        data: {
-          overtimeId: entity.id,
-          actorId,
-          action: OvertimeAuditAction.UPDATED,
-          before: snapshot(current),
-          after: snapshot(entity),
-        },
-      });
-      return entity;
-    });
+  update(id: string, data: Prisma.OvertimeUpdateInput): Promise<OvertimeEntity> {
+    return this.db.overtime.update({ where: { id }, data, include: overtimeWithUserInclude });
   }
 
-  delete(id: string, actorId: string): Promise<OvertimeEntity> {
-    return this.db.$transaction(async (tx) => {
-      const entity = await tx.overtime.delete({ where: { id }, include: overtimeWithUserInclude });
-      await tx.overtimeAuditLog.create({
-        data: { overtimeId: entity.id, actorId, action: OvertimeAuditAction.DELETED, before: snapshot(entity) },
-      });
-      return entity;
-    });
-  }
-
-  /** Newest first, keyset-paginated: pass the last id of the previous page as `cursor`. */
-  findAuditLogs(params: {
-    overtimeId?: string;
-    actorId?: string;
-    cursor?: string;
-    take: number;
-  }): Promise<OvertimeAuditLogEntity[]> {
-    return this.db.overtimeAuditLog.findMany({
-      where: {
-        ...(params.overtimeId ? { overtimeId: params.overtimeId } : {}),
-        ...(params.actorId ? { actorId: params.actorId } : {}),
-      },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: params.take,
-      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
-      include: overtimeAuditLogInclude,
-    });
+  delete(id: string): Promise<OvertimeEntity> {
+    return this.db.overtime.delete({ where: { id }, include: overtimeWithUserInclude });
   }
 }
