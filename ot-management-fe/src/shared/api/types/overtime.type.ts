@@ -54,31 +54,3 @@ export interface OvertimeUsage {
   monthly: OvertimeUsagePeriod;
   yearly: OvertimeUsagePeriod;
 }
-
-export type OvertimeAuditAction = 'CREATED' | 'UPDATED' | 'DELETED';
-
-export interface OvertimeSnapshot {
-  userId: string;
-  userName: string | null;
-  date: string;
-  startTime: string;
-  endTime: string;
-  hours: number;
-}
-
-export interface OvertimeAuditLog {
-  id: string;
-  overtimeId: string;
-  action: OvertimeAuditAction;
-  actor: OvertimeUserSummary | null;
-  /** Null on CREATED. */
-  before: OvertimeSnapshot | null;
-  /** Null on DELETED. */
-  after: OvertimeSnapshot | null;
-  createdAt: string;
-}
-
-export interface OvertimeAuditPage {
-  items: OvertimeAuditLog[];
-  nextCursor: string | null;
-}

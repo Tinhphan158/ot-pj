@@ -26,8 +26,9 @@ import { OvertimeMonthView } from '@/features/overtime/components/OvertimeMonthV
 import { OvertimeYearView } from '@/features/overtime/components/OvertimeYearView';
 import { OvertimeDrawer } from '@/features/overtime/components/dialog/OvertimeDrawer';
 import { OvertimeCrowdedDayDialog } from '@/features/overtime/components/dialog/OvertimeCrowdedDayDialog';
+import { OvertimeDeleteDialog } from '@/features/overtime/components/dialog/OvertimeDeleteDialog';
+import type { Overtime } from '@/shared/api';
 import { OvertimeLimitBanner } from '@/features/overtime/components/OvertimeLimitBanner';
-import { OvertimeExportButton } from '@/features/overtime/components/OvertimeExportButton';
 
 const VIEW_OPTIONS: { value: OvertimeView; label: string }[] = [
   { value: 'day', label: 'Day' },
@@ -67,6 +68,8 @@ export default function TeamOvertime() {
   const query = useOvertimeRangeQuery(from, to);
   const items = useMemo(() => query.data ?? [], [query.data]);
   const actions = useOvertimeActions();
+  // Entry picked for deletion from the month grid's right-click menu, awaiting confirmation.
+  const [pendingDelete, setPendingDelete] = useState<Overtime | null>(null);
 
   const goToDay = (date: string) => {
     setAnchor(parseDateStr(date));
@@ -84,13 +87,10 @@ export default function TeamOvertime() {
         title="Overtime management"
         description="See who is working overtime and during which time slots — pick a day, or browse by week, month or year."
         actions={
-          <div className="flex items-center gap-2">
-            <OvertimeExportButton from={from} to={to} />
-            <Button onClick={() => actions.openCreate(toDateStr(anchor))}>
-              <Plus className="size-4" />
-              Register overtime
-            </Button>
-          </div>
+          <Button onClick={() => actions.openCreate(toDateStr(anchor))}>
+            <Plus className="size-4" />
+            Register overtime
+          </Button>
         }
       />
 
@@ -174,7 +174,10 @@ export default function TeamOvertime() {
           overtimes={items}
           monthAnchor={anchor}
           currentUserId={currentUser?.id}
-          onSelectDay={goToDay}
+          onCreate={actions.openCreate}
+          onEdit={actions.openEdit}
+          onDelete={setPendingDelete}
+          onMove={actions.moveOvertimes}
         />
       ) : (
         <OvertimeYearView overtimes={items} currentUserId={currentUser?.id} onSelectMonth={goToMonth} />
@@ -196,6 +199,15 @@ export default function TeamOvertime() {
         onOpenChange={actions.handleCrowdedDayOpenChange}
         onConfirm={actions.handleCrowdedDayConfirm}
         isSubmitting={actions.isSubmitting}
+      />
+
+      <OvertimeDeleteDialog
+        overtime={pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        onConfirm={async () => {
+          if (pendingDelete && (await actions.deleteOvertime(pendingDelete))) setPendingDelete(null);
+        }}
+        isDeleting={actions.isDeleting}
       />
     </AppPageContainer>
   );

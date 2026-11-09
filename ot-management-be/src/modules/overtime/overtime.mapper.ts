@@ -1,6 +1,6 @@
 import { toDateString } from '@/utils';
-import { OvertimeAuditLogEntity, OvertimeEntity, OvertimeSnapshot } from './overtime.entity';
-import { OvertimeAuditLogResponseDto, OvertimeResponseDto } from './overtime.response';
+import { OvertimeEntity } from './overtime.entity';
+import { OvertimeResponseDto } from './overtime.response';
 
 export class OvertimeMapper {
   static toResponse(entity: OvertimeEntity): OvertimeResponseDto {
@@ -26,18 +26,5 @@ export class OvertimeMapper {
 
   static toResponseList(entities: OvertimeEntity[]): OvertimeResponseDto[] {
     return entities.map((entity) => OvertimeMapper.toResponse(entity));
-  }
-
-  static toAuditLogResponse(entity: OvertimeAuditLogEntity): OvertimeAuditLogResponseDto {
-    return {
-      id: entity.id,
-      overtimeId: entity.overtimeId,
-      action: entity.action,
-      actor: entity.actor,
-      // Written only by the repository's `snapshot`, so the shape is known.
-      before: entity.before as OvertimeSnapshot | null,
-      after: entity.after as OvertimeSnapshot | null,
-      createdAt: entity.createdAt,
-    };
   }
 }

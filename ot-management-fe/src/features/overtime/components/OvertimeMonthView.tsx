@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, type DragEvent, type MouseEvent } from 'react';
+import { Lock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
 import type { Overtime } from '@/shared/api';
@@ -8,12 +9,35 @@ import { addDays, isSameDay, monthCycle, toDateStr } from '@/features/overtime/u
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
 import { holidayName, isDateLocked } from '@/features/overtime/utils/rules';
 import { useOvertimeRulesQuery } from '@/features/overtime/hooks/queries/useOvertimeRulesQuery';
+import { useCurrentUser } from '@/features/auth/store/auth.store';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu';
 
 interface OvertimeMonthViewProps {
   overtimes: Overtime[];
   monthAnchor: Date;
   currentUserId?: string;
-  onSelectDay: (date: string) => void;
+  /** Click on an empty cell of your own row — register overtime on that day. */
+  onCreate: (date: string) => void;
+  onEdit: (overtime: Overtime) => void;
+  onDelete: (overtime: Overtime) => void;
+  /** Drag & drop within your own row: move that day's entries to `date`. */
+  onMove: (overtimes: Overtime[], date: string) => void;
+}
+
+/** The right-click menu: where it opens and the cell it belongs to. */
+interface CellMenu {
+  x: number;
+  y: number;
+  date: string;
+  entries: Overtime[];
+  locked: boolean;
 }
 
 interface UserRow {
@@ -24,7 +48,20 @@ interface UserRow {
   email: string;
 }
 
-export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSelectDay }: OvertimeMonthViewProps) {
+export function OvertimeMonthView({
+  overtimes,
+  monthAnchor,
+  currentUserId,
+  onCreate,
+  onEdit,
+  onDelete,
+  onMove,
+}: OvertimeMonthViewProps) {
+  const [menu, setMenu] = useState<CellMenu | null>(null);
+  // The own-row cell being dragged, and the day it is hovering over.
+  const [dragFrom, setDragFrom] = useState<{ date: string; entries: Overtime[] } | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+  const currentUser = useCurrentUser();
   const { labelMonth, labelYear } = monthCycle(monthAnchor);
   const { data: rules } = useOvertimeRulesQuery();
   // Columns span the OT cycle (21st of prev month → 20th of the label month).
@@ -35,9 +72,10 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
     return arr;
   }, [monthAnchor]);
 
-  const { rows, cellMap, maxHours } = useMemo(() => {
+  const { rows, cellMap, entryMap, maxHours } = useMemo(() => {
     const userMap = new Map<string, UserRow>();
     const cells = new Map<string, number>(); // `${userId}|${day}` -> hours
+    const entries = new Map<string, Overtime[]>(); // same key -> that day's entries
     let max = 0;
 
     for (const o of overtimes) {
@@ -51,13 +89,26 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
       const key = `${o.userId}|${day}`;
       const next = (cells.get(key) ?? 0) + o.hours;
       cells.set(key, next);
+      entries.set(key, [...(entries.get(key) ?? []), o]);
       if (next > max) max = next;
+    }
+
+    // Only your own row is clickable, so keep it on the grid even before your first entry this month.
+    if (currentUser && currentUser.id === currentUserId && !userMap.has(currentUser.id)) {
+      userMap.set(currentUser.id, {
+        id: currentUser.id,
+        name: currentUser.name,
+        email: currentUser.email,
+        avatar: currentUser.avatar,
+        total: 0,
+      });
     }
 
     // Most overtime first; the "You" row is found by its highlight, not by position.
     const list = [...userMap.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
-    return { rows: list, cellMap: cells, maxHours: max };
-  }, [overtimes]);
+    for (const list of entries.values()) list.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    return { rows: list, cellMap: cells, entryMap: entries, maxHours: max };
+  }, [overtimes, currentUser, currentUserId]);
 
   const today = new Date();
 
@@ -68,6 +119,46 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
       </div>
     );
   }
+
+  const openMenu = (event: MouseEvent, date: string, entries: Overtime[]) => {
+    event.preventDefault();
+    setMenu({ x: event.clientX, y: event.clientY, date, entries, locked: isDateLocked(date, rules) });
+  };
+
+  /** Own cells only: empty registers, one entry edits, several let you pick which. */
+  const handleOwnCellClick = (event: MouseEvent, date: string, entries: Overtime[]) => {
+    if (entries.length === 0) onCreate(date);
+    else if (entries.length === 1) onEdit(entries[0]);
+    else openMenu(event, date, entries);
+  };
+
+  const endDrag = () => {
+    setDragFrom(null);
+    setDragOver(null);
+  };
+
+  /** A day can take a drop when it is another day in your row and its OT month is still open. */
+  const canDropOn = (date: string) => dragFrom !== null && date !== dragFrom.date && !isDateLocked(date, rules);
+
+  const handleDragStart = (event: DragEvent, date: string, entries: Overtime[]) => {
+    event.dataTransfer.effectAllowed = 'move';
+    // Firefox only starts a drag that carries some data.
+    event.dataTransfer.setData('text/plain', date);
+    setDragFrom({ date, entries });
+  };
+
+  const handleDragOver = (event: DragEvent, date: string) => {
+    if (!canDropOn(date)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    if (dragOver !== date) setDragOver(date);
+  };
+
+  const handleDrop = (event: DragEvent, date: string) => {
+    event.preventDefault();
+    if (dragFrom && canDropOn(date)) onMove(dragFrom.entries, date);
+    endDrag();
+  };
 
   const cellStyle = (hours: number) => {
     if (hours <= 0) return undefined;
@@ -142,18 +233,50 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
                   </td>
                   {days.map((day) => {
                     const dateStr = toDateStr(day);
-                    const hours = cellMap.get(`${row.id}|${day.getDate()}`) ?? 0;
+                    const key = `${row.id}|${day.getDate()}`;
+                    const hours = cellMap.get(key) ?? 0;
+                    const entries = entryMap.get(key) ?? [];
+                    const label = hours > 0 ? formatHours(hours) : '';
+                    const cellClass = 'flex h-7 w-full items-center justify-center rounded text-[10px] font-medium tabular-nums';
                     return (
                       <td key={dateStr} className="border-b p-0.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => onSelectDay(dateStr)}
-                          title={hours > 0 ? `${row.name} · ${dateStr} · ${formatHours(hours)}` : dateStr}
-                          className="flex h-7 w-full items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors hover:ring-1 hover:ring-primary"
-                          style={cellStyle(hours)}
-                        >
-                          {hours > 0 ? formatHours(hours) : ''}
-                        </button>
+                        {mine ? (
+                          <button
+                            type="button"
+                            draggable={hours > 0 && !isDateLocked(dateStr, rules)}
+                            onClick={(event) => handleOwnCellClick(event, dateStr, entries)}
+                            onContextMenu={(event) => openMenu(event, dateStr, entries)}
+                            onDragStart={(event) => handleDragStart(event, dateStr, entries)}
+                            onDragEnd={endDrag}
+                            onDragOver={(event) => handleDragOver(event, dateStr)}
+                            onDragLeave={() => dragOver === dateStr && setDragOver(null)}
+                            onDrop={(event) => handleDrop(event, dateStr)}
+                            title={
+                              hours > 0
+                                ? `${dateStr} · ${formatHours(hours)} · click to edit, drag to move, right-click for more`
+                                : `${dateStr} · click to register overtime`
+                            }
+                            className={cn(
+                              cellClass,
+                              'cursor-pointer transition-colors hover:ring-1 hover:ring-primary',
+                              hours > 0 && !isDateLocked(dateStr, rules) && 'cursor-grab active:cursor-grabbing',
+                              dragFrom?.date === dateStr && 'opacity-40',
+                              dragOver === dateStr && 'bg-primary/25 outline-2 outline-offset-1 outline-dashed outline-primary',
+                            )}
+                            style={dragOver === dateStr ? undefined : cellStyle(hours)}
+                          >
+                            {label}
+                          </button>
+                        ) : (
+                          // Someone else's day: shown for reference, not clickable.
+                          <div
+                            title={hours > 0 ? `${row.name} · ${dateStr} · ${formatHours(hours)}` : undefined}
+                            className={cn(cellClass, 'cursor-default')}
+                            style={cellStyle(hours)}
+                          >
+                            {label}
+                          </div>
+                        )}
                       </td>
                     );
                   })}
@@ -176,11 +299,81 @@ export function OvertimeMonthView({ overtimes, monthAnchor, currentUserId, onSel
           <span className="size-3 rounded bg-rose-500/30" />
           Public holiday
         </span>
-        <span>Click a cell to see that day&apos;s detail</span>
+        <span>In your row: click an empty day to register, a filled one to edit · drag to move to another day · right-click for edit/delete</span>
         {rules && days.length > 0 && isDateLocked(toDateStr(days[0]), rules) && (
           <span className="font-medium">This OT month is closed — entries can no longer be changed</span>
         )}
       </div>
+
+      {/* One menu for the whole grid, anchored to an invisible point at the cursor. */}
+      <DropdownMenu open={menu !== null} onOpenChange={(open) => !open && setMenu(null)}>
+        <DropdownMenuTrigger asChild>
+          <span aria-hidden className="pointer-events-none fixed size-0" style={{ left: menu?.x, top: menu?.y }} />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" sideOffset={2} className="min-w-44">
+          {menu && <CellMenuItems menu={menu} onCreate={onCreate} onEdit={onEdit} onDelete={onDelete} />}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
+  );
+}
+
+function CellMenuItems({
+  menu,
+  onCreate,
+  onEdit,
+  onDelete,
+}: {
+  menu: CellMenu;
+  onCreate: (date: string) => void;
+  onEdit: (overtime: Overtime) => void;
+  onDelete: (overtime: Overtime) => void;
+}) {
+  const canChange = !menu.locked;
+  const reason = menu.locked ? 'OT month is closed' : null;
+
+  if (menu.entries.length === 0) {
+    return (
+      <>
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{menu.date}</DropdownMenuLabel>
+        <DropdownMenuItem onSelect={() => onCreate(menu.date)}>
+          <Plus />
+          Register overtime
+        </DropdownMenuItem>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {menu.entries.map((entry, i) => (
+        <div key={entry.id}>
+          {i > 0 && <DropdownMenuSeparator />}
+          {/* Several entries on one day: label each so it is clear which one is being changed. */}
+          {menu.entries.length > 1 && (
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+              {entry.startTime}–{entry.endTime}
+            </DropdownMenuLabel>
+          )}
+          <DropdownMenuItem disabled={!canChange} onSelect={() => onEdit(entry)}>
+            <Pencil />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" disabled={!canChange} onSelect={() => onDelete(entry)}>
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </div>
+      ))}
+      {reason && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+            <Lock className="size-3" />
+            {reason}
+          </DropdownMenuLabel>
+        </>
+      )}
+    </>
   );
 }

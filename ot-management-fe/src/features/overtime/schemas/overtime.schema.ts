@@ -50,5 +50,5 @@ export function createOvertimeSchema(windowFor: (date: string) => OvertimeWindow
 export const OVERTIME_EMPTY: OvertimeFormValues = {
   date: '',
   startTime: '17:00',
-  endTime: '19:00',
+  endTime: '21:00',
 };
