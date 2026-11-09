@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Trash2 } from 'lucide-react';
+import { History, Loader2, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet';
 import { Form } from '@/shared/components/ui/form';
 import { Button } from '@/shared/components/ui/button';
 import type { Overtime } from '@/shared/api';
 import { OVERTIME_EMPTY, createOvertimeSchema, type OvertimeFormValues } from '@/features/overtime/schemas/overtime.schema';
 import { useOvertimeRulesQuery } from '@/features/overtime/hooks/queries/useOvertimeRulesQuery';
+import { useOvertimeAuditLogsQuery } from '@/features/overtime/hooks/queries/useOvertimeAuditLogsQuery';
 import { isDateLocked, windowFor } from '@/features/overtime/utils/rules';
+import { OvertimeAuditItem } from '../audit/OvertimeAuditItem';
 import { OvertimeForm } from '../form/OvertimeForm';
 import { OvertimeUsagePanel } from '../form/OvertimeUsagePanel';
 
@@ -32,6 +34,32 @@ function toFormValues(overtime: Overtime | null, defaultDate?: string): Overtime
     startTime: overtime.startTime,
     endTime: overtime.endTime,
   };
+}
+
+function OvertimeHistory({ overtimeId }: { overtimeId: string }) {
+  const query = useOvertimeAuditLogsQuery({ overtimeId });
+  const logs = query.data?.pages.flatMap((page) => page.items) ?? [];
+
+  return (
+    <section className="space-y-2 border-t pt-4">
+      <h3 className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <History className="size-3.5" />
+        History
+      </h3>
+      {query.isLoading ? (
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      ) : logs.length === 0 ? (
+        // Entries registered before the log existed have no history.
+        <p className="text-xs text-muted-foreground">No recorded changes.</p>
+      ) : (
+        <ul className="space-y-3">
+          {logs.map((log) => (
+            <OvertimeAuditItem key={log.id} log={log} compact />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }
 
 export function OvertimeDrawer({
@@ -85,6 +113,7 @@ export function OvertimeDrawer({
               {!locked && (
                 <OvertimeUsagePanel date={date} />
               )}
+              {editing && open && <OvertimeHistory overtimeId={editing.id} />}
             </div>
             <SheetFooter>
               <Button type="submit" disabled={isSubmitting || locked}>

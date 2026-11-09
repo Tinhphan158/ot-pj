@@ -6,9 +6,6 @@ import { AppPageContainer, AppPageHeader } from '@/shared/components/custome';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/utils/cn';
-import { isPayday } from '@/shared/utils/payday';
-import { PaydayDialog } from '@/shared/components/layout/AppPaydayDialog';
-import { CalendarMonthPicker } from '@/features/calendar/components/CalendarMonthPicker';
 import { MONTH_NAMES, weekdayName } from '@/shared/utils/format';
 import {
   auspiciousHours,
@@ -36,7 +33,6 @@ interface DayCell {
   events: CalendarEvent[];
   /** Official day off, from the server's overtime rules. */
   holiday?: string;
-  payday: boolean;
   inMonth: boolean;
 }
 
@@ -48,7 +44,6 @@ export default function LunarCalendar() {
   const today = useMemo(() => new Date(), []);
   const [monthAnchor, setMonthAnchor] = useState(() => startOfMonth(today));
   const [selected, setSelected] = useState(today);
-  const [paydayOpen, setPaydayOpen] = useState(false);
   const { data: rules } = useOvertimeRulesQuery();
 
   // Six Monday-first weeks, so every month fits without the grid changing height.
@@ -63,7 +58,6 @@ export default function LunarCalendar() {
         lunar,
         events: eventsFor(date, lunar),
         holiday: holidayName(toDateStr(date), rules),
-        payday: isPayday(date),
         inMonth: date.getMonth() === monthAnchor.getMonth(),
       };
     });
@@ -88,7 +82,6 @@ export default function LunarCalendar() {
 
   const selectDay = (date: Date) => {
     setSelected(date);
-    if (isPayday(date)) setPaydayOpen(true);
     if (date.getMonth() !== monthAnchor.getMonth() || date.getFullYear() !== monthAnchor.getFullYear()) {
       setMonthAnchor(startOfMonth(date));
     }
@@ -97,10 +90,10 @@ export default function LunarCalendar() {
   const selectedLunar = useMemo(() => lunarOf(selected), [selected]);
   const selectedEvents = useMemo(() => eventsFor(selected, selectedLunar), [selected, selectedLunar]);
   const selectedHoliday = holidayName(toDateStr(selected), rules);
-  const selectedPayday = isPayday(selected);
   const term = solarTerm(selectedLunar.jd);
+  const yearOptions = Array.from({ length: 41 }, (_, i) => today.getFullYear() - 20 + i);
 
-  const upcoming = monthCells.filter((cell) => cell.events.length > 0 || cell.holiday || cell.payday);
+  const upcoming = monthCells.filter((cell) => cell.events.length > 0 || cell.holiday);
 
   return (
     <AppPageContainer className="max-w-7xl">
@@ -138,7 +131,30 @@ export default function LunarCalendar() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <CalendarMonthPicker value={monthAnchor} onChange={setMonthAnchor} />
+              <select
+                aria-label="Month"
+                value={monthAnchor.getMonth()}
+                onChange={(e) => setMonthAnchor(new Date(monthAnchor.getFullYear(), Number(e.target.value), 1))}
+                className="h-8 rounded-md border bg-background px-2 text-sm dark:bg-input/30"
+              >
+                {MONTH_NAMES.map((name, i) => (
+                  <option key={name} value={i}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Year"
+                value={monthAnchor.getFullYear()}
+                onChange={(e) => setMonthAnchor(new Date(Number(e.target.value), monthAnchor.getMonth(), 1))}
+                className="h-8 rounded-md border bg-background px-2 text-sm dark:bg-input/30"
+              >
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
               <Button variant="outline" size="sm" onClick={goToday}>
                 Today
               </Button>
@@ -188,15 +204,10 @@ export default function LunarCalendar() {
                     </span>
                     <span
                       className={cn(
-                        'flex items-center gap-0.5 text-[10px] tabular-nums sm:text-xs',
+                        'text-[10px] tabular-nums sm:text-xs',
                         special ? 'font-semibold text-amber-600 dark:text-amber-400' : 'text-muted-foreground',
                       )}
                     >
-                      {cell.payday && (
-                        <span title="Ngày lương" className="text-xs sm:text-sm">
-                          💰
-                        </span>
-                      )}
                       {shortLunarLabel(cell.lunar)}
                     </span>
                   </div>
@@ -229,7 +240,6 @@ export default function LunarCalendar() {
               <span className="font-semibold text-amber-600 dark:text-amber-400">1/8</span>
               Lunar 1st &amp; 15th (mùng 1, rằm)
             </span>
-            <span className="flex items-center gap-1.5">💰 Payday (lúa về)</span>
             <span>Small numbers are lunar days · &quot;N&quot; marks a leap month</span>
           </div>
         </Card>
@@ -283,7 +293,7 @@ export default function LunarCalendar() {
                 </div>
               </div>
 
-              {(selectedHoliday || selectedPayday || selectedEvents.length > 0) && (
+              {(selectedHoliday || selectedEvents.length > 0) && (
                 <div className="space-y-1.5">
                   <p className="text-muted-foreground">Events</p>
                   {selectedHoliday && (
@@ -291,16 +301,6 @@ export default function LunarCalendar() {
                       <CalendarHeart className="size-4 shrink-0" />
                       Day off · {selectedHoliday}
                     </p>
-                  )}
-                  {selectedPayday && (
-                    <button
-                      type="button"
-                      onClick={() => setPaydayOpen(true)}
-                      className="flex w-full items-center gap-2 rounded-md bg-emerald-500/10 px-2.5 py-1.5 text-left font-medium text-emerald-700 transition-colors hover:bg-emerald-500/20 dark:text-emerald-300"
-                    >
-                      <span className="shrink-0">💰</span>
-                      Ngày lương · Lúa về!
-                    </button>
                   )}
                   {selectedEvents.map((event) => (
                     <EventRow key={event.name} event={event} />
@@ -339,9 +339,6 @@ export default function LunarCalendar() {
                         </span>
                         <span className="min-w-0 space-y-0.5">
                           {cell.holiday && <span className="block font-medium text-rose-500">Day off · {cell.holiday}</span>}
-                          {cell.payday && (
-                            <span className="block font-medium text-emerald-600 dark:text-emerald-400">💰 Ngày lương · Lúa về!</span>
-                          )}
                           {cell.events.map((event) => (
                             <span key={event.name} className={cn('block', event.major && 'font-medium')}>
                               {event.name}
@@ -357,8 +354,6 @@ export default function LunarCalendar() {
           </Card>
         </div>
       </div>
-
-      <PaydayDialog open={paydayOpen} onOpenChange={setPaydayOpen} />
     </AppPageContainer>
   );
 }

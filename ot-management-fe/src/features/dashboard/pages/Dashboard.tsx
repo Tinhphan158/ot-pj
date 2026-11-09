@@ -16,6 +16,7 @@ import { DashboardTrendChart } from '@/features/dashboard/components/DashboardTr
 import { DashboardTopMembers } from '@/features/dashboard/components/DashboardTopMembers';
 import { DashboardMemberFilter } from '@/features/dashboard/components/DashboardMemberFilter';
 import { useUsersQuery } from '@/features/dashboard/hooks/queries/useUsersQuery';
+import { OvertimeExportButton } from '@/features/overtime/components/OvertimeExportButton';
 import { OvertimeLimitBanner } from '@/features/overtime/components/OvertimeLimitBanner';
 
 const TREND_COPY: Record<DashboardPeriod, { title: string; description: string }> = {
@@ -50,7 +51,12 @@ export default function Dashboard() {
         onPeriodChange={setPeriod}
         onShift={(delta) => setAnchor((prev) => shiftAnchor(period, prev, delta))}
         onToday={() => setAnchor(new Date())}
-        actions={<DashboardMemberFilter value={memberId} currentUserId={currentUser?.id} onChange={setMemberId} />}
+        actions={
+          <>
+            <DashboardMemberFilter value={memberId} currentUserId={currentUser?.id} onChange={setMemberId} />
+            <OvertimeExportButton from={from} to={to} userId={memberId} />
+          </>
+        }
       />
 
       <OvertimeLimitBanner className="mb-4" />

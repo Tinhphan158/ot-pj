@@ -34,37 +34,7 @@ export function useOvertimeActions() {
   const updateMutation = useUpdateOvertimeMutation();
   const deleteMutation = useDeleteOvertimeMutation();
 
-  /**
-   * Company-wide entries registered on `date`. Uses the same cache key as the
-   * Day view, so it is usually free.
-   */
-  const fetchEntriesOnDay = (date: string): Promise<Overtime[]> => {
-    const to = toDateStr(addDays(parseDateStr(date), 1));
-    return queryClient.fetchQuery({
-      queryKey: overtimeKeys.range(date, to),
-      queryFn: () => overtimeService.findByRange(date, to),
-    });
-  };
-
-  /**
-   * Register on `date` — unless you already have overtime that day, in which
-   * case the drawer opens on your (earliest) entry to edit instead.
-   */
-  const openCreate = async (date?: string) => {
-    if (date && currentUser) {
-      try {
-        const mine = (await fetchEntriesOnDay(date))
-          .filter((o) => o.userId === currentUser.id)
-          .sort((a, b) => a.startTime.localeCompare(b.startTime));
-        if (mine.length > 0) {
-          setEditing(mine[0]);
-          setDrawerOpen(true);
-          return;
-        }
-      } catch {
-        // The lookup is a convenience; fall through to a blank registration.
-      }
-    }
+  const openCreate = (date?: string) => {
     setEditing(null);
     setDefaultDate(date);
     setDrawerOpen(true);
@@ -101,46 +71,23 @@ export function useOvertimeActions() {
     }
   };
 
-  /**
-   * Move a day's entries to another day, keeping their hours (drag & drop in the
-   * month grid). Sent one by one and stops at the first rejection; the server
-   * re-checks ownership, closed months, the day's window, overlaps and limits.
-   */
-  const moveOvertimes = async (overtimes: Overtime[], date: string): Promise<boolean> => {
-    if (overtimes.some((o) => o.userId !== currentUser?.id)) {
-      notify({ type: 'info', title: 'Only the owner can move this', description: 'This overtime entry belongs to someone else.' });
-      return false;
-    }
-
-    let moved = 0;
-    try {
-      for (const overtime of overtimes) {
-        await updateMutation.mutateAsync({ id: overtime.id, payload: { date } });
-        moved++;
-      }
-      notify({
-        type: 'success',
-        title: 'Overtime moved',
-        description: `${overtimes.length > 1 ? `${overtimes.length} entries` : `${overtimes[0].startTime}–${overtimes[0].endTime}`} → ${date}`,
-      });
-      return true;
-    } catch (error) {
-      notify({
-        type: 'error',
-        title: moved > 0 ? `Moved ${moved} of ${overtimes.length} entries` : 'Could not move overtime',
-        description: getErrorMessage(error),
-      });
-      return false;
-    }
-  };
-
   const handleDrawerOpenChange = (open: boolean) => {
     setDrawerOpen(open);
     if (!open) setEditing(null);
   };
 
-  /** Company-wide number of entries already registered on `date`. */
-  const countEntriesOnDay = async (date: string): Promise<number> => (await fetchEntriesOnDay(date)).length;
+  /**
+   * Company-wide number of entries already registered on `date`. Uses the same
+   * cache key as the Day view, so it is usually free.
+   */
+  const countEntriesOnDay = async (date: string): Promise<number> => {
+    const to = toDateStr(addDays(parseDateStr(date), 1));
+    const items = await queryClient.fetchQuery({
+      queryKey: overtimeKeys.range(date, to),
+      queryFn: () => overtimeService.findByRange(date, to),
+    });
+    return items.length;
+  };
 
   const createOvertime = async (values: OvertimeFormValues) => {
     try {
@@ -192,25 +139,15 @@ export function useOvertimeActions() {
     if (!open) setCrowdedDay(null);
   };
 
-  /** Delete without going through the drawer. Resolves to whether it went through. */
-  const deleteOvertime = async (overtime: Overtime): Promise<boolean> => {
-    if (overtime.userId !== currentUser?.id) {
-      notify({ type: 'info', title: 'Only the owner can delete this', description: 'This overtime entry belongs to someone else.' });
-      return false;
-    }
-    try {
-      await deleteMutation.mutateAsync(overtime.id);
-      notify({ type: 'success', title: 'Overtime deleted' });
-      return true;
-    } catch (error) {
-      notify({ type: 'error', title: 'Could not delete overtime', description: getErrorMessage(error) });
-      return false;
-    }
-  };
-
   const handleDelete = async () => {
     if (!editing) return;
-    if (await deleteOvertime(editing)) handleDrawerOpenChange(false);
+    try {
+      await deleteMutation.mutateAsync(editing.id);
+      notify({ type: 'success', title: 'Overtime deleted' });
+      handleDrawerOpenChange(false);
+    } catch (error) {
+      notify({ type: 'error', title: 'Could not delete overtime', description: getErrorMessage(error) });
+    }
   };
 
   return {
@@ -226,8 +163,6 @@ export function useOvertimeActions() {
     handleCrowdedDayConfirm,
     handleCrowdedDayOpenChange,
     handleDelete,
-    deleteOvertime,
-    moveOvertimes,
     isSubmitting: createMutation.isPending || updateMutation.isPending || isCheckingDay,
     isDeleting: deleteMutation.isPending,
   };

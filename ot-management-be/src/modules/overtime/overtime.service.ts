@@ -24,13 +24,22 @@ import { OvertimeRepository } from './overtime.repository';
 import { OvertimeMapper } from './overtime.mapper';
 import { OvertimeEntity } from './overtime.entity';
 import {
+  OvertimeAuditPageResponseDto,
   OvertimeResponseDto,
   OvertimeRulesResponseDto,
   OvertimeUsagePeriodDto,
   OvertimeUsageResponseDto,
 } from './overtime.response';
 import { OvertimeGateway } from './overtime.gateway';
-import { CreateOvertimeDto, QueryOvertimeRangeDto, QueryOvertimeUsageDto, UpdateOvertimeDto } from './dto';
+import {
+  CreateOvertimeDto,
+  QueryOvertimeAuditDto,
+  QueryOvertimeRangeDto,
+  QueryOvertimeUsageDto,
+  UpdateOvertimeDto,
+} from './dto';
+
+const AUDIT_PAGE_SIZE = 30;
 
 @Injectable()
 export class OvertimeService {
@@ -89,6 +98,22 @@ export class OvertimeService {
       period(otYearRange(date), OVERTIME_YEARLY_LIMIT_HOURS),
     ]);
     return { monthly, yearly };
+  }
+
+  async findAuditLogs(query: QueryOvertimeAuditDto): Promise<OvertimeAuditPageResponseDto> {
+    const take = query.limit ?? AUDIT_PAGE_SIZE;
+    // One extra row tells whether another page exists without a count query.
+    const rows = await this.overtimeRepository.findAuditLogs({
+      overtimeId: query.overtimeId,
+      actorId: query.actorId,
+      cursor: query.cursor,
+      take: take + 1,
+    });
+    const page = rows.slice(0, take);
+    return {
+      items: page.map((row) => OvertimeMapper.toAuditLogResponse(row)),
+      nextCursor: rows.length > take ? page[page.length - 1].id : null,
+    };
   }
 
   private async getOrThrow(id: string): Promise<OvertimeEntity> {
@@ -175,13 +200,10 @@ export class OvertimeService {
     const hours = computeOvertimeHours(dto.startTime, dto.endTime);
     await this.assertWithinLimits(actor.id, date, hours);
 
-    const entity = await this.overtimeRepository.create({
-      userId: actor.id,
-      date,
-      startTime: dto.startTime,
-      endTime: dto.endTime,
-      hours,
-    });
+    const entity = await this.overtimeRepository.create(
+      { userId: actor.id, date, startTime: dto.startTime, endTime: dto.endTime, hours },
+      actor.id,
+    );
     const overtime = OvertimeMapper.toResponse(entity);
     this.gateway.emit('created', { overtime, actor: { id: actor.id, name: overtime.user?.name ?? actor.name } });
     return overtime;
@@ -215,12 +237,16 @@ export class OvertimeService {
       await this.assertWithinLimits(current.userId, date, hours, id);
     }
 
-    const entity = await this.overtimeRepository.update(id, {
-      ...(dto.date !== undefined ? { date } : {}),
-      ...(dto.startTime !== undefined ? { startTime } : {}),
-      ...(dto.endTime !== undefined ? { endTime } : {}),
-      ...(timesChanged ? { hours } : {}),
-    });
+    const entity = await this.overtimeRepository.update(
+      current,
+      {
+        ...(dto.date !== undefined ? { date } : {}),
+        ...(dto.startTime !== undefined ? { startTime } : {}),
+        ...(dto.endTime !== undefined ? { endTime } : {}),
+        ...(timesChanged ? { hours } : {}),
+      },
+      actor.id,
+    );
 
     const overtime = OvertimeMapper.toResponse(entity);
     this.gateway.emit('updated', { overtime, actor: { id: actor.id, name: overtime.user?.name ?? actor.name } });
@@ -232,7 +258,7 @@ export class OvertimeService {
     this.assertOwner(current.userId, actor);
     this.assertNotLocked(current.date);
 
-    const entity = await this.overtimeRepository.delete(id);
+    const entity = await this.overtimeRepository.delete(id, actor.id);
     const overtime = OvertimeMapper.toResponse(entity);
     this.gateway.emit('deleted', { overtime, actor: { id: actor.id, name: overtime.user?.name ?? actor.name } });
   }

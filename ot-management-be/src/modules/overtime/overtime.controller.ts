@@ -10,16 +10,33 @@ import {
   Patch,
   Post,
   Query,
+  StreamableFile,
 } from '@nestjs/common';
 import { CurrentUser } from '@/decorators';
 import type { JwtPayload } from '@/common';
 import { OvertimeService } from './overtime.service';
-import type { OvertimeResponseDto, OvertimeRulesResponseDto, OvertimeUsageResponseDto } from './overtime.response';
-import { CreateOvertimeDto, QueryOvertimeRangeDto, QueryOvertimeUsageDto, UpdateOvertimeDto } from './dto';
+import { OvertimeExportService } from './overtime-export.service';
+import type {
+  OvertimeAuditPageResponseDto,
+  OvertimeResponseDto,
+  OvertimeRulesResponseDto,
+  OvertimeUsageResponseDto,
+} from './overtime.response';
+import {
+  CreateOvertimeDto,
+  QueryOvertimeAuditDto,
+  QueryOvertimeExportDto,
+  QueryOvertimeRangeDto,
+  QueryOvertimeUsageDto,
+  UpdateOvertimeDto,
+} from './dto';
 
 @Controller('overtimes')
 export class OvertimeController {
-  constructor(private readonly overtimeService: OvertimeService) {}
+  constructor(
+    private readonly overtimeService: OvertimeService,
+    private readonly exportService: OvertimeExportService,
+  ) {}
 
   @Get('range')
   findByRange(@Query() query: QueryOvertimeRangeDto): Promise<OvertimeResponseDto[]> {
@@ -34,6 +51,20 @@ export class OvertimeController {
   @Get('usage')
   getUsage(@CurrentUser() user: JwtPayload, @Query() query: QueryOvertimeUsageDto): Promise<OvertimeUsageResponseDto> {
     return this.overtimeService.getUsage(user, query);
+  }
+
+  @Get('audit-logs')
+  findAuditLogs(@Query() query: QueryOvertimeAuditDto): Promise<OvertimeAuditPageResponseDto> {
+    return this.overtimeService.findAuditLogs(query);
+  }
+
+  @Get('export')
+  async export(@Query() query: QueryOvertimeExportDto): Promise<StreamableFile> {
+    const buffer = await this.exportService.exportXlsx(query);
+    return new StreamableFile(buffer, {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      disposition: `attachment; filename="overtime_${query.from}_${query.to}.xlsx"`,
+    });
   }
 
   @Post()

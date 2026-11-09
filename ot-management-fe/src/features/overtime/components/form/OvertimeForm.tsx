@@ -6,7 +6,6 @@ import type { OvertimeRules } from '@/shared/api';
 import { AppFieldGroup, AppFormDatePicker, AppFormTimeField } from '@/shared/components/custome';
 import { formatDate } from '@/shared/utils/format';
 import type { OvertimeFormValues } from '@/features/overtime/schemas/overtime.schema';
-import { OvertimeTimeRangeSlider } from '@/features/overtime/components/form/OvertimeTimeRangeSlider';
 import { DAY_TYPE_LABEL, dayTypeOf, holidayName, isDateLocked, lockDateOf, windowFor } from '@/features/overtime/utils/rules';
 
 interface OvertimeFormProps {
@@ -28,7 +27,6 @@ export function OvertimeForm({ control, rules }: OvertimeFormProps) {
         <AppFormTimeField control={control} name="startTime" label="Start time" />
         <AppFormTimeField control={control} name="endTime" label="End time" />
       </AppFieldGroup>
-      <OvertimeTimeRangeSlider control={control} window={allowed} disabled={locked} />
 
       {locked && rules ? (
         <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">

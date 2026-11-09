@@ -4,9 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* `.light` pins a subtree to the light palette even inside dark mode (e.g. the payday dialog). */
-:root,
-.light {
+:root {
   --radius: 0.65rem;
 
   --background: oklch(0.99 0 0);
@@ -60,8 +58,6 @@
 }
 
 .dark {
-  /* Browser-drawn controls (native dropdowns, scrollbars) follow the theme too. */
-  color-scheme: dark;
   --background: oklch(0.16 0.01 260);
   --foreground: oklch(0.96 0.005 260);
 
