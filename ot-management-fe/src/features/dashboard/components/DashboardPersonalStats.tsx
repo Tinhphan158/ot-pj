@@ -6,6 +6,7 @@ import { AppStatCard } from '@/shared/components/custome';
 import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
 import type { DashboardPeriod } from '@/features/dashboard/utils/trend';
+import { computeRanks } from '@/features/dashboard/utils/rank';
 
 interface DashboardPersonalStatsProps {
   stats: DashboardStatsData;
@@ -57,7 +58,7 @@ export function DashboardPersonalStats({ stats, period, subjectId, isSelf }: Das
           // The board keeps members whose overtime is all still ahead of them, so
           // being on it is not the same as having worked any of it.
           hours > 0
-            ? `Ranked #${rankIndex + 1} of ${rankedMembers} with overtime`
+            ? `Ranked #${computeRanks(stats.topMembers)[rankIndex]} of ${rankedMembers} with overtime`
             : `${isSelf ? 'You have' : 'This member has'} no overtime worked in this period`
         }
         icon={Clock}

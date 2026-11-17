@@ -80,6 +80,8 @@ export class DashboardService {
     // Ranked on hours worked, so upcoming overtime never buys a place — but it is
     // reported alongside, which keeps members whose overtime is still ahead of
     // them on the board with an empty progress bar instead of dropping them.
+    // On equal hours, whoever needed fewer entries (then fewer days) to get there
+    // ranks higher; registered total and name only break what is left.
     const topMembers: DashboardMemberStatDto[] = [...byMember.entries()]
       .map(([userId, total]) => {
         const member = memberById.get(userId);
@@ -98,7 +100,12 @@ export class DashboardService {
         };
       })
       .sort(
-        (a, b) => b.hours - a.hours || b.totalHours - a.totalHours || a.name.localeCompare(b.name),
+        (a, b) =>
+          b.hours - a.hours ||
+          a.entries - b.entries ||
+          a.days - b.days ||
+          b.totalHours - a.totalHours ||
+          a.name.localeCompare(b.name),
       );
 
     const toSortedDaily = (days: Map<string, DashboardDailyPointDto>) =>

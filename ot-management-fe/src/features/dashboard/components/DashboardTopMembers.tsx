@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { cn } from '@/shared/utils/cn';
 import { formatHours } from '@/shared/utils/format';
 import { OvertimeUserAvatar } from '@/features/overtime/components/OvertimeUserAvatar';
+import { computeRanks } from '@/features/dashboard/utils/rank';
 
 interface DashboardTopMembersProps {
   members: DashboardMemberStat[];
@@ -18,6 +19,7 @@ const RANK_STYLES = ['bg-amber-400 text-amber-950', 'bg-slate-300 text-slate-800
 
 export function DashboardTopMembers({ members, currentUserId, limit = 10 }: DashboardTopMembersProps) {
   const visible = members.slice(0, limit);
+  const ranks = computeRanks(members);
   // Both bars share one scale — the largest registered total on the board — so
   // the worked bar reads as a filled portion of it rather than its own ranking.
   // Members are ordered by hours worked, so the widest total is not row one.
@@ -60,6 +62,7 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
                   ? Math.max(1, Math.round((member.hours / scale) * 100))
                   : 0;
               const upcoming = member.totalHours > member.hours;
+              const rank = ranks[index];
               return (
                 <li
                   key={member.userId}
@@ -83,10 +86,10 @@ export function DashboardTopMembers({ members, currentUserId, limit = 10 }: Dash
                   <span
                     className={cn(
                       'relative flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
-                      RANK_STYLES[index] ?? 'bg-muted text-muted-foreground',
+                      RANK_STYLES[rank - 1] ?? 'bg-muted text-muted-foreground',
                     )}
                   >
-                    {index + 1}
+                    {rank}
                   </span>
                   <OvertimeUserAvatar
                     userId={member.userId}
