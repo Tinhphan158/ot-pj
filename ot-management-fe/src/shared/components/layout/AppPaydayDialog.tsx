@@ -37,7 +37,7 @@ export function AppPaydayDialog({ userId }: { userId: string }) {
 export function PaydayDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="light max-w-sm overflow-hidden bg-background text-center text-foreground [color-scheme:light]">
+      <DialogContent className="light max-w-[calc(100%-2rem)] overflow-hidden bg-background text-center text-foreground scheme-light sm:max-w-xl">
         {/* Falling money behind the content. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           {MONEY.map((emoji, i) => (
@@ -52,18 +52,19 @@ export function PaydayDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         </div>
 
         <DialogHeader className="relative items-center sm:text-center">
-          <DialogTitle className="text-2xl font-bold">Hôm nay lúa về! 🌾</DialogTitle>
-          <DialogDescription className="text-base">Bank account ting ting...! 🔔💰</DialogDescription>
+          <DialogTitle className="text-3xl font-bold">Hôm nay lúa về! 🌾</DialogTitle>
+          <DialogDescription className="text-lg font-semibold text-foreground">Bank account ting ting...! 🔔💰</DialogDescription>
         </DialogHeader>
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/memes/payday-cat.gif"
           alt="Mèo nhảy múa mừng ngày lương"
-          className="relative mx-auto size-48 rounded-xl object-cover shadow-lg"
+          // As large as the dialog allows, but capped by viewport height so it never overflows.
+          className="relative mx-auto aspect-square w-full max-w-[55vh] rounded-2xl object-cover shadow-lg"
         />
 
-        <p className="relative text-sm text-muted-foreground">Chúc mừng ngày lương — tháng này vất vả rồi!</p>
+        <p className="relative text-base font-semibold text-foreground">Chúc mừng ngày lương — tháng này vất vả rồi!</p>
 
         <Button className="relative w-full" onClick={() => onOpenChange(false)}>
           Tuyệt vời 🎉
