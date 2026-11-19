@@ -166,27 +166,53 @@
   }
 }
 
-/* Payday dialog — notes and coins drifting down behind the cat. */
-.payday-money {
-  animation: payday-fall 3.2s linear infinite;
+/*
+ * Payday money rain — full-viewport, over the whole page while the dialog is open.
+ * Each drop sets --x (start), --drift (sideways travel), --spin and its own
+ * duration/delay inline; the outer element falls, the inner one flutters.
+ */
+.money-rain-drop {
+  position: absolute;
+  top: 0;
+  left: var(--x);
+  will-change: transform;
+  animation: money-rain-fall var(--duration) linear var(--delay) infinite both;
 }
 
-@keyframes payday-fall {
+.money-rain-drop > span {
+  display: block;
+  animation: money-rain-flutter var(--flutter) ease-in-out var(--delay) infinite alternate;
+  filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.2));
+}
+
+@keyframes money-rain-fall {
   0% {
-    transform: translateY(0) rotate(0deg);
+    transform: translate3d(0, -15vh, 0) rotate(0deg);
     opacity: 0;
   }
-  10% {
-    opacity: 0.9;
+  8% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
   }
   100% {
-    transform: translateY(520px) rotate(360deg);
+    transform: translate3d(var(--drift), 110vh, 0) rotate(var(--spin));
     opacity: 0;
+  }
+}
+
+@keyframes money-rain-flutter {
+  from {
+    transform: rotateY(0deg) translateX(-12px);
+  }
+  to {
+    transform: rotateY(180deg) translateX(12px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .payday-money {
+  .money-rain {
     display: none;
   }
 }

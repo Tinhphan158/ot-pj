@@ -1,13 +1,61 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
 import { isPayday } from '@/shared/utils/payday';
 import { toDateStr } from '@/features/overtime/utils/period';
 
 const SEEN_KEY_PREFIX = 'payday-dialog-seen';
-const MONEY = ['💸', '💰', '💵', '🪙', '💸', '💵', '💰', '🪙'];
+const MONEY = ['💸', '💵', '💰', '🪙', '💴', '💶', '💷', '💵', '💸'];
+/** Drops in the opening downpour (short delays) vs. the steady rain that follows. */
+const BURST_DROPS = 35;
+const STEADY_DROPS = 40;
+
+interface Drop {
+  emoji: string;
+  style: CSSProperties;
+}
+
+const random = (min: number, max: number) => min + Math.random() * (max - min);
+
+function makeDrops(): Drop[] {
+  return Array.from({ length: BURST_DROPS + STEADY_DROPS }, (_, i) => {
+    const burst = i < BURST_DROPS;
+    return {
+      emoji: MONEY[Math.floor(Math.random() * MONEY.length)],
+      style: {
+        '--x': `${random(-2, 98)}vw`,
+        '--drift': `${random(-15, 15)}vw`,
+        '--spin': `${random(-540, 540)}deg`,
+        '--duration': `${random(2.6, 5.2)}s`,
+        '--delay': `${burst ? random(0, 1) : random(1, 5)}s`,
+        '--flutter': `${random(0.4, 0.9)}s`,
+        fontSize: `${random(22, 48)}px`,
+      } as CSSProperties,
+    };
+  });
+}
+
+/**
+ * Full-screen money rain over the whole page. Portaled to <body> above the
+ * dialog (z-60) and click-through, so it never blocks the buttons.
+ */
+function MoneyRain() {
+  // Randomised once per opening; this only mounts client-side while the dialog is open.
+  const [drops] = useState(makeDrops);
+  return createPortal(
+    <div aria-hidden className="money-rain pointer-events-none fixed inset-0 z-60 overflow-hidden">
+      {drops.map((drop, i) => (
+        <span key={i} className="money-rain-drop" style={drop.style}>
+          <span>{drop.emoji}</span>
+        </span>
+      ))}
+    </div>,
+    document.body,
+  );
+}
 
 /**
  * Celebrates payday once per user per day: the first visit on payday opens it,
@@ -38,18 +86,7 @@ export function PaydayDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="light max-w-[calc(100%-2rem)] overflow-hidden bg-background text-center text-foreground scheme-light sm:max-w-xl">
-        {/* Falling money behind the content. */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-          {MONEY.map((emoji, i) => (
-            <span
-              key={i}
-              className="payday-money absolute -top-8 text-2xl"
-              style={{ left: `${6 + i * 12}%`, animationDelay: `${(i % 4) * 0.6 + i * 0.15}s` }}
-            >
-              {emoji}
-            </span>
-          ))}
-        </div>
+        {open && <MoneyRain />}
 
         <DialogHeader className="relative items-center sm:text-center">
           <DialogTitle className="text-3xl font-bold">Hôm nay lúa về! 🌾</DialogTitle>
