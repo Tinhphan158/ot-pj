@@ -9,8 +9,8 @@ export function useUpdateOvertimeMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: UpdateOvertimePayload }) =>
       overtimeService.update(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: overtimeKeys.all, refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.all, refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: overtimeKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 }

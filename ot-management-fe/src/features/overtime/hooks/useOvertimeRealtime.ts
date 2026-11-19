@@ -34,8 +34,8 @@ export function useOvertimeRealtime() {
 
     const makeHandler = (type: keyof typeof VERBS) => (event: OvertimeEvent) => {
       // Always refresh so every open client stays in sync.
-      queryClient.invalidateQueries({ queryKey: overtimeKeys.all, refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.all, refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: overtimeKeys.all }, { cancelRefetch: false });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all }, { cancelRefetch: false });
 
       // Don't notify the person who made the change.
       if (event.actor?.id === currentUserId) return;

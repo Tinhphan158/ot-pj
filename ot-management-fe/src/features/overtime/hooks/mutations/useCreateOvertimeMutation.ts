@@ -8,8 +8,8 @@ export function useCreateOvertimeMutation() {
   return useMutation({
     mutationFn: (payload: CreateOvertimePayload) => overtimeService.create(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: overtimeKeys.all, refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.all, refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: overtimeKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 }

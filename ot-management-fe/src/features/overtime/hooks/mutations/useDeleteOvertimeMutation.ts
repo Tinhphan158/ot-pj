@@ -8,8 +8,8 @@ export function useDeleteOvertimeMutation() {
   return useMutation({
     mutationFn: (id: string) => overtimeService.remove(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: overtimeKeys.all, refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.all, refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: overtimeKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 }
