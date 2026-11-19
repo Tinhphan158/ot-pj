@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-const ACCESS_TOKEN_COOKIE = 'access_token';
+/** Keep in sync with `shared/utils/auth-cookie.ts` (app-specific to avoid clashing with other apps on the host). */
+const ACCESS_TOKEN_COOKIE = 'ot_access_token';
 const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
 /** Where an authenticated user lands when they have no explicit destination. */
 const HOME_PATH = '/dashboard';

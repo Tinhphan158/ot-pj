@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -12,11 +13,22 @@ import { notify } from '@/shared/utils/notify';
 import { getErrorMessage } from '@/shared/utils/api-error';
 import { loginSchema, type LoginValues } from '@/features/auth/schemas/auth.schema';
 import { useLogin } from '@/features/auth/hooks';
+import { useHasAuthHydrated, useIsAuthenticated } from '@/features/auth/store/auth.store';
 
 export default function Login() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const login = useLogin();
+  const hydrated = useHasAuthHydrated();
+  const isAuthenticated = useIsAuthenticated();
+
+  // Already signed in (e.g. the gate cookie was missing but the session is
+  // intact): go straight through instead of asking for credentials again.
+  useEffect(() => {
+    if (hydrated && isAuthenticated && !login.isPending) {
+      router.replace(searchParams.get('redirect') || '/dashboard');
+    }
+  }, [hydrated, isAuthenticated, login.isPending, router, searchParams]);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),

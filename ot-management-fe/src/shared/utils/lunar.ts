@@ -324,6 +324,21 @@ export function eventsFor(date: Date, lunar: LunarDate = lunarOf(date)): Calenda
   return events;
 }
 
+/**
+ * Days from `date` until the next Giao thừa (the last day of lunar month 12,
+ * the eve of Tết). Returns 0 on Giao thừa itself.
+ */
+export function daysUntilGiaoThua(date: Date): number {
+  const start = jdFromDate(date.getDate(), date.getMonth() + 1, date.getFullYear());
+  // A lunar year never exceeds 385 days, so Tết is always found within that window.
+  for (let offset = 1; offset <= 386; offset++) {
+    const d = jdToDate(start + offset);
+    const lunar = solarToLunar(d.day, d.month, d.year);
+    if (lunar.day === 1 && lunar.month === 1 && !lunar.leap) return offset - 1;
+  }
+  return 0;
+}
+
 /** Short lunar label for a grid cell: the month on the 1st ("1/8"), otherwise the day. */
 export function shortLunarLabel(lunar: LunarDate): string {
   if (lunar.day === 1) return `${lunar.day}/${lunar.month}${lunar.leap ? 'N' : ''}`;

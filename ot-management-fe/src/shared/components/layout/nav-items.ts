@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, LayoutDashboard, UserRound, type LucideIcon } from 'lucide-react';
+import { CalendarCheck, CalendarDays, CalendarRange, LayoutDashboard, UserRound, type LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   label: string;
@@ -10,5 +10,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Overtime management', href: '/team-overtime', icon: CalendarRange },
   { label: 'Lunar calendar', href: '/lunar-calendar', icon: CalendarDays },
+  { label: 'Company schedule', href: '/company-schedule', icon: CalendarCheck },
   { label: 'Profile', href: '/profile', icon: UserRound },
 ];

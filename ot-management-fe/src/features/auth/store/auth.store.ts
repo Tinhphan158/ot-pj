@@ -50,6 +50,14 @@ export const useAuthStore = create<AuthState>()(
   ),
 );
 
-export const useCurrentUser = () => useAuthStore((s) => s.user);
+// Keep every open tab on the same session. Without this, a stale tab keeps its
+// old tokens in memory and writes them back over a newer login or logout.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'auth-storage') void useAuthStore.persist.rehydrate();
+  });
+}
+
+export const useCurrentUser =() => useAuthStore((s) => s.user);
 export const useIsAuthenticated = () => useAuthStore((s) => s.isAuthenticated);
 export const useHasAuthHydrated = () => useAuthStore((s) => s.hasHydrated);

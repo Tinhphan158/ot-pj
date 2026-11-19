@@ -44,9 +44,17 @@ async function runRefresh(): Promise<string> {
     setTokens(accessToken, nextRefresh);
     return accessToken;
   } catch (error) {
-    clearAuth();
+    // Only a definite rejection ends the session. A network blip, a 5xx while the
+    // API restarts, or a 429 must not log the user out — the next request retries.
+    if (isSessionRejected(error)) clearAuth();
     throw error;
   }
+}
+
+function isSessionRejected(error: unknown): boolean {
+  if (!(error instanceof AxiosError)) return true;
+  const status = error.response?.status;
+  return status === 400 || status === 401 || status === 403;
 }
 
 instance.interceptors.response.use(
@@ -67,7 +75,7 @@ instance.interceptors.response.use(
         return instance(original);
       } catch (refreshError) {
         refreshPromise = null;
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && !useAuthStore.getState().refreshToken) {
           window.location.href = '/login';
         }
         return Promise.reject(toApiError(refreshError));

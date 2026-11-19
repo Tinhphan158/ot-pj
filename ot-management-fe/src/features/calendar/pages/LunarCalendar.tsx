@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CalendarHeart, ChevronLeft, ChevronRight, Moon, Sparkles, Sun } from 'lucide-react';
 import { AppPageContainer, AppPageHeader } from '@/shared/components/custome';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
@@ -13,6 +13,7 @@ import { MONTH_NAMES, weekdayName } from '@/shared/utils/format';
 import {
   auspiciousHours,
   dayCanChi,
+  daysUntilGiaoThua,
   eventsFor,
   formatLunarDate,
   lunarOf,
@@ -45,7 +46,15 @@ function startOfMonth(date: Date): Date {
 }
 
 export default function LunarCalendar() {
-  const today = useMemo(() => new Date(), []);
+  const [today, setToday] = useState(() => new Date());
+  // Roll "today" over at local midnight so the countdown stays current on an open tab.
+  useEffect(() => {
+    const now = new Date();
+    const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const timer = setTimeout(() => setToday(new Date()), nextMidnight.getTime() - now.getTime() + 1000);
+    return () => clearTimeout(timer);
+  }, [today]);
+  const daysToGiaoThua = useMemo(() => daysUntilGiaoThua(today), [today]);
   const [monthAnchor, setMonthAnchor] = useState(() => startOfMonth(today));
   const [selected, setSelected] = useState(today);
   const [paydayOpen, setPaydayOpen] = useState(false);
@@ -135,6 +144,16 @@ export default function LunarCalendar() {
                   {MONTH_NAMES[monthAnchor.getMonth()]} {monthAnchor.getFullYear()}
                 </p>
                 <p className="text-xs text-muted-foreground">{lunarSpan}</p>
+                <p className="mt-0.5 text-xs font-medium text-rose-600 dark:text-rose-300">
+                  🧧{' '}
+                  {daysToGiaoThua === 0 ? (
+                    'Hôm nay là Giao thừa!'
+                  ) : (
+                    <>
+                      Còn <span className="font-bold tabular-nums">{daysToGiaoThua}</span> ngày nữa là đến Giao thừa
+                    </>
+                  )}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
